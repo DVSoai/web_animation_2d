@@ -194,6 +194,7 @@ table.ftab input[type=number]{width:70px}
           <div class="f">Cằm chồng xuống cổ áo (px)<input type="number" id="oNeck"></div>
           <div class="f">Gấu áo đè cạp quần (px)<input type="number" id="oHip"></div>
         </div>
+        <label class="chk" style="white-space:normal"><input type="checkbox" id="oFit">Thu mọi mảnh chân cùng một tỉ lệ để cạp quần chỉ rộng <input type="number" id="oFitPct" style="width:56px">% gấu áo (NSO: 13/15 ≈ 87%), áo phủ ra ngoài quần</label>
         <label class="chk" style="white-space:normal"><input type="checkbox" id="oHipAuto">Tự đè gấu áo xuống hết “nắp” cạp quần nếu mảnh chân có vẽ (NSO: đỉnh quần luôn nằm khuất dưới áo)</label>
         <label class="chk" style="white-space:normal"><input type="checkbox" id="oNeckAuto">Tự tính độ chồng cằm như NSO: <input type="number" id="oNeckPct" style="width:56px">% chiều cao đầu (NSO: 2 px / đầu 16 px ≈ 12%)</label>
         <label class="chk" style="white-space:normal"><input type="checkbox" id="oDark">Khi cắt tờ sprite: tô tối phần da cổ trong cổ áo (bỏ cổ như NSO)</label>
@@ -302,8 +303,8 @@ table.ftab input[type=number]{width:70px}
         <div class="f">Thân đè cạp quần (px)<input type="number" id="ovHip" value="10"></div>
         <div class="f">Cằm chồng cổ áo (px)<input type="number" id="ovNeck" value="10"></div>
       </div>
-      <label class="chk" style="margin-top:6px;white-space:normal"><input type="checkbox" id="fitLegs">Co/giãn chân theo bề rộng gấu áo (thử nghiệm)</label>
-      <div class="f" style="margin-top:4px">Cạp rộng hơn gấu (%)<input type="number" id="fitPct" value="4"></div>
+      <label class="chk" style="margin-top:6px;white-space:normal"><input type="checkbox" id="fitLegs">Thu chân để cạp hẹp hơn gấu áo (như NSO)</label>
+      <div class="f" style="margin-top:4px">Cạp quần = % gấu áo<input type="number" id="fitPct" value="88"></div>
       <div class="small" style="margin-top:6px">Chỉ căn ba lớp chân, thân, đầu. Neo đo từ ảnh: cạp = tâm mép trên mảnh chân; gấu = tâm mép dưới thân (bỏ qua bàn tay); cổ áo = tâm mép trên thân; cằm = tâm đáy đầu.</div>
     </section>
     <section>
@@ -400,10 +401,10 @@ function defaultFrames(layers){
   ['run-0','Chạy 1',110],['run-1','Chạy 2',110],['run-2','Chạy 3',110],['run-3','Chạy 4',110],['jump-0','Nhảy 1',200],['jump-1','Nhảy 2',200],['jump-2','Nhảy 3',200],['jump-3','Nhảy 4',200]];
   return L.map(([id,name,ms])=>({id,name,ms,L:Object.fromEntries(layers.map(l=>[l.key,emptyL()]))}));
 }
-function defOpts(mode){return {hipAuto:true,neckMode:mode||'headTop',neckAuto:mode!=='bodyTop',neckPct:12,ovNeck:mode==='bodyTop'?10:12,ovHip:8,darkNeck:true,defringe:true,fitLegs:false,fitPct:4}}
+function defOpts(mode){return {hipAuto:true,neckMode:mode||'headTop',neckAuto:mode!=='bodyTop',neckPct:12,ovNeck:mode==='bodyTop'?10:12,ovHip:8,darkNeck:true,defringe:true,fitLegs:true,fitPct:88}}
 function newProject(name){const layers=[{key:'legs',label:'Chân'},{key:'body',label:'Thân'},{key:'head',label:'Đầu'}];
   return {v:2,name:name||'Nhân vật mới',canvas:{w:480,h:480,rx:240,ry:400},layers,lib:[],frames:defaultFrames(layers),cur:0,sel:'body',opts:defOpts('headTop')}}
-function withOpts(p){if(p.opts&&p.opts.hipAuto===undefined)p.opts.hipAuto=true;if(p.opts&&p.opts.neckPct===undefined){p.opts.neckPct=12;p.opts.neckAuto=p.opts.neckMode!=='bodyTop'}if(!p.opts){const hi=p.layers.findIndex(l=>l.key==='head'),bi=p.layers.findIndex(l=>l.key==='body');p.opts=defOpts(hi>bi&&bi>=0?'headTop':'bodyTop')}return p}
+function withOpts(p){if(p.opts&&p.opts.fitPct===4){p.opts.fitPct=88;p.opts.fitLegs=true}if(p.opts&&p.opts.hipAuto===undefined)p.opts.hipAuto=true;if(p.opts&&p.opts.neckPct===undefined){p.opts.neckPct=12;p.opts.neckAuto=p.opts.neckMode!=='bodyTop'}if(!p.opts){const hi=p.layers.findIndex(l=>l.key==='head'),bi=p.layers.findIndex(l=>l.key==='body');p.opts=defOpts(hi>bi&&bi>=0?'headTop':'bodyTop')}return p}
 function migrate(p){
   if(p.v===2)return withOpts(p);
   // v1: order + frames[].layers{}
@@ -460,11 +461,17 @@ function anchors(it){if(AN[it.id])return AN[it.id];return AN[it.id]=anchorsMask(
 // ================= geometry / align =================
 function rectOf(L){const it=L&&lib(L.img);if(!it)return null;return {it,x:L.x,y:L.y,w:it.w*L.s,h:it.h*L.s}}
 function bbox(f){let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;for(const l of S.layers){const L=f.L[l.key];if(!L||!L.vis)continue;const r=rectOf(L);if(!r)continue;x0=Math.min(x0,r.x);y0=Math.min(y0,r.y);x1=Math.max(x1,r.x+r.w);y1=Math.max(y1,r.y+r.h)}return x0>x1?null:{x0,y0,x1,y1}}
+// one scale for every legs piece so the waistband is pct of the shirt hem (NSO: legs top 13 px under a 15 px body)
+function legScale(pct){const med=a=>{a=a.filter(v=>v>0).sort((x,y)=>x-y);return a.length?a[Math.floor(a.length/2)]:0};
+  const L=S.lib.filter(i=>i.kind==='legs'&&IM[i.id]),B=S.lib.filter(i=>i.kind==='body'&&IM[i.id]);if(!L.length||!B.length)return 0;
+  const waist=med(L.map(i=>anchors(i).topC.w));if(!waist)return 0;
+  const hems=B.map(i=>anchors(i).hemW).filter(h=>h>0&&h<waist*1.35);const hem=med(hems.length?hems:B.map(i=>anchors(i).hemW));if(!hem)return 0;
+  return +Math.min(1.5,Math.max(.5,hem*pct/waist)).toFixed(3)}
 function autoAlign(f){
-  const O=S.opts||defOpts(),ovH=+O.ovHip||0,ovN=+O.ovNeck||0,fit=!!O.fitLegs,pct=(+O.fitPct||0)/100;
+  const O=S.opts||defOpts(),ovH=+O.ovHip||0,ovN=+O.ovNeck||0,fit=!!O.fitLegs,pct=(+O.fitPct||88)/100;
   const Ll=f.L.legs,Lb=f.L.body,Lh=f.L.head;const il=Ll&&lib(Ll.img),ib=Lb&&lib(Lb.img),ih=Lh&&lib(Lh.img);
   let waist=null,neck=null;
-  if(il){const A=anchors(il);if(fit&&ib){const B=anchors(ib);const hw=B.hemW*Lb.s;if(A.topC.w>0&&hw>0)Ll.s=+((hw*(1+pct))/A.topC.w).toFixed(3)}
+  if(il){const A=anchors(il);if(fit){const ls=legScale(pct);if(ls)Ll.s=ls}
     Ll.x=Math.round(-A.topC.c*Ll.s);Ll.y=Math.round(-(A.bot+1)*Ll.s);waist={x:0,y:Ll.y+A.top*Ll.s}}
   let ovHip=ovH;if(il&&O.hipAuto){const ld=lidDepth(il)*Ll.s;if(ld)ovHip=Math.max(ovH,Math.round(ld+2))}
   if(ib){const B=anchors(ib);const wx=waist?waist.x:0,wy=waist?waist.y:-120;
@@ -776,7 +783,7 @@ function renderKpi(){
    <div class="kpi"><div class="l">Nối cổ</div><div class="v" style="font-size:18px">${O.neckMode==='bodyTop'?'Thân đè đầu':'Bỏ cổ'}</div><div class="s">cằm ${O.neckAuto?O.neckPct+'% đầu':O.ovNeck+'px'} · gấu áo ${O.hipAuto?'tự che nắp cạp':O.ovHip+'px'}</div></div>`}
 function syncOpts(){const O=S.opts;
   document.querySelectorAll('input[name=neckMode]').forEach(r=>{r.checked=r.value===O.neckMode;r.closest('label').classList.toggle('on',r.checked)});
-  $('#oNeck').value=O.ovNeck;$('#oNeck').disabled=!!O.neckAuto;$('#oNeckAuto').checked=!!O.neckAuto;$('#oHipAuto').checked=!!O.hipAuto;$('#oNeckPct').value=O.neckPct;$('#oHip').value=O.ovHip;$('#oDark').checked=!!O.darkNeck;$('#oFringe').checked=!!O.defringe;
+  $('#oNeck').value=O.ovNeck;$('#oNeck').disabled=!!O.neckAuto;$('#oNeckAuto').checked=!!O.neckAuto;$('#oHipAuto').checked=!!O.hipAuto;$('#oFit').checked=!!O.fitLegs;$('#oFitPct').value=O.fitPct;$('#oNeckPct').value=O.neckPct;$('#oHip').value=O.ovHip;$('#oDark').checked=!!O.darkNeck;$('#oFringe').checked=!!O.defringe;
   $('#ovNeck').value=O.ovNeck;$('#ovHip').value=O.ovHip;$('#fitLegs').checked=!!O.fitLegs;$('#fitPct').value=O.fitPct}
 function applyNeckMode(m){const hi=S.layers.findIndex(l=>l.key==='head');if(hi<0||!S.layers.find(l=>l.key==='body'))return;
   const H=S.layers.splice(hi,1)[0];const bi=S.layers.findIndex(l=>l.key==='body');S.layers.splice(m==='headTop'?bi+1:bi,0,H);S.opts.neckMode=m}
@@ -860,6 +867,8 @@ function bindDash(){
   $('#dAddFrame').onclick=()=>{S.cur=S.frames.length-1;$('#fAdd').click()};
   document.querySelectorAll('input[name=neckMode]').forEach(r=>r.onchange=()=>change(()=>{applyNeckMode(r.value);S.opts.neckAuto=r.value!=='bodyTop';S.opts.ovNeck=r.value==='bodyTop'?10:12;S.frames.forEach(f=>{if(!f.placed)autoAlign(f)})}));
   $('#oNeck').onchange=e=>change(()=>S.opts.ovNeck=+e.target.value||0);$('#oHip').onchange=e=>change(()=>S.opts.ovHip=+e.target.value||0);
+  $('#oFit').onchange=e=>change(()=>{S.opts.fitLegs=e.target.checked;S.frames.forEach(f=>{if(!e.target.checked&&f.L.legs)f.L.legs.s=1;if(!f.placed)autoAlign(f)})});
+  $('#oFitPct').onchange=e=>change(()=>{S.opts.fitPct=+e.target.value||88;S.frames.forEach(f=>{if(!f.placed)autoAlign(f)})});
   $('#oHipAuto').onchange=e=>change(()=>{S.opts.hipAuto=e.target.checked;S.frames.forEach(f=>{if(!f.placed)autoAlign(f)})});
   $('#oNeckAuto').onchange=e=>change(()=>{S.opts.neckAuto=e.target.checked;S.frames.forEach(f=>{if(!f.placed)autoAlign(f)})});$('#oNeckPct').onchange=e=>change(()=>{S.opts.neckPct=+e.target.value||12;S.frames.forEach(f=>{if(!f.placed)autoAlign(f)})});
   $('#oDark').onchange=e=>change(()=>S.opts.darkNeck=e.target.checked);$('#oFringe').onchange=e=>change(()=>S.opts.defringe=e.target.checked);
