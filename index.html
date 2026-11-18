@@ -198,7 +198,7 @@ table.ftab input[type=number]{width:70px}
         <label class="chk" style="white-space:normal"><input type="checkbox" id="oFit">Thu mọi mảnh chân cùng một tỉ lệ để cạp quần chỉ rộng <input type="number" id="oFitPct" style="width:56px">% gấu áo (NSO: 13/15 ≈ 87%), áo phủ ra ngoài quần</label>
         <label class="chk" style="white-space:normal"><input type="checkbox" id="oHipAuto">Tự đè gấu áo xuống hết “nắp” cạp quần nếu mảnh chân có vẽ (NSO: đỉnh quần luôn nằm khuất dưới áo)</label>
         <label class="chk" style="white-space:normal"><input type="checkbox" id="oNeckAuto">Tự tính độ chồng cằm như NSO: <input type="number" id="oNeckPct" style="width:56px">% chiều cao đầu (NSO nhìn nghiêng: đầu đặt ngay trên thân, 0–2%; lún sâu hơn sẽ trông gù)</label>
-        <label class="chk" style="white-space:normal"><input type="checkbox" id="oDark">Khi cắt tờ sprite: tô tối phần da cổ trong cổ áo (bỏ cổ như NSO)</label>
+        <label class="chk" style="white-space:normal"><input type="checkbox" id="oDark">Khi cắt tờ sprite: tô tối phần da cổ trong cổ áo (thường để TẮT: NSO giữ cổ màu da ngay dưới quai hàm để giấu đường nối)</label>
         <label class="chk" style="white-space:normal"><input type="checkbox" id="oFringe">Khi cắt tờ sprite: xóa viền xanh sót quanh mép mảnh</label>
         <div class="row"><button class="pri" id="oApply">Áp dụng và tự căn lại mọi khung</button></div>
       </div>
@@ -402,7 +402,7 @@ function defaultFrames(layers){
   ['run-0','Chạy 1',110],['run-1','Chạy 2',110],['run-2','Chạy 3',110],['run-3','Chạy 4',110],['jump-0','Nhảy 1',200],['jump-1','Nhảy 2',200],['jump-2','Nhảy 3',200],['jump-3','Nhảy 4',200]];
   return L.map(([id,name,ms])=>({id,name,ms,L:Object.fromEntries(layers.map(l=>[l.key,emptyL()]))}));
 }
-function defOpts(mode){return {hipAuto:true,neckMode:mode||'headTop',neckAuto:mode!=='bodyTop',neckPct:2,ovNeck:mode==='bodyTop'?10:12,ovHip:8,darkNeck:true,defringe:true,fitLegs:true,fitPct:88}}
+function defOpts(mode){return {hipAuto:true,neckMode:mode||'headTop',neckAuto:mode!=='bodyTop',neckPct:2,ovNeck:mode==='bodyTop'?10:12,ovHip:8,darkNeck:false,defringe:true,fitLegs:true,fitPct:88}}
 function newProject(name){const layers=[{key:'legs',label:'Chân'},{key:'body',label:'Thân'},{key:'head',label:'Đầu'}];
   return {v:2,name:name||'Nhân vật mới',canvas:{w:480,h:480,rx:240,ry:400},layers,lib:[],frames:defaultFrames(layers),cur:0,sel:'body',opts:defOpts('headTop')}}
 function withOpts(p){if(p.opts&&p.opts.neckPct===12&&!p.opts.neckPctSet)p.opts.neckPct=2;if(p.opts&&p.opts.fitPct===4){p.opts.fitPct=88;p.opts.fitLegs=true}if(p.opts&&p.opts.hipAuto===undefined)p.opts.hipAuto=true;if(p.opts&&p.opts.neckPct===undefined){p.opts.neckPct=2;p.opts.neckAuto=p.opts.neckMode!=='bodyTop'}if(!p.opts){const hi=p.layers.findIndex(l=>l.key==='head'),bi=p.layers.findIndex(l=>l.key==='body');p.opts=defOpts(hi>bi&&bi>=0?'headTop':'bodyTop')}return p}
@@ -656,9 +656,10 @@ function processPiece(pd,w,h,kind,green){
   const O=S.opts||defOpts(),d=pd.data,N=w*h,m=new Uint8Array(N);for(let i=0;i<N;i++)m[i]=d[i*4+3]>128?1:0;
   if(green&&O.defringe){
     const erode=src=>{const o=new Uint8Array(N);for(let y=1;y<h-1;y++)for(let x=1;x<w-1;x++){const i=y*w+x;o[i]=src[i]&&src[i-1]&&src[i+1]&&src[i-w]&&src[i+w]?1:0}return o};
-    const e2=erode(erode(m));
-    for(let i=0;i<N;i++){if(!d[i*4+3]||e2[i])continue;const r=d[i*4],g=d[i*4+1],b=d[i*4+2],mx=Math.max(r,b);
-      if(g>=mx&&(r+g+b)/3>90){d[i*4]=20;d[i*4+1]=24;d[i*4+2]=20}else if(g>mx)d[i*4+1]=mx}
+    const e2=erode(erode(erode(m)));
+    for(let i=0;i<N;i++){if(!d[i*4+3]||e2[i])continue;const r=d[i*4],g=d[i*4+1],b=d[i*4+2],mx=Math.max(r,b),lum=(r+g+b)/3;
+      // pure green spill, or olive/yellow-green where the key colour mixed with skin or cloth near the cut line
+      if((g>=mx&&lum>90)||(r-g<25&&g-b>35&&lum>60)){d[i*4]=20;d[i*4+1]=24;d[i*4+2]=20}else if(g>mx)d[i*4+1]=mx}
   }
   if(kind==='body'&&O.darkNeck&&O.neckMode!=='bodyTop'){
     const A=anchorsMask(m,w,h),hw=A.hemW||w*.5,depth=Math.max(6,Math.round((A.trunkBot-A.neckY)*.24));
