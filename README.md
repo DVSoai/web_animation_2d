@@ -17,3 +17,27 @@ Trang web ghép nhân vật 2D tách mảnh **đầu – thân – chân** theo 
 - `order`: thứ tự vẽ, phần tử đầu ở sau cùng. Mặc định `legs → head → body` (thân đè chân cổ và cạp quần).
 - Mỗi lớp: `x`, `y` là góc trên-trái của mảnh tính từ điểm gốc, sau khi nhân `scale`; `width`, `height` là kích thước đã nhân tỉ lệ.
 - `anchors`: toạ độ các điểm neo đo được, để kiểm tra.
+
+
+## Tổng quan (dashboard)
+
+Mở web sẽ vào trang **Tổng quan**:
+
+- **Dự án**: mọi nhân vật lưu trong trình duyệt, kèm ảnh nhỏ, số khung, số mảnh. Mở, nhân bản, xóa ngay tại thẻ.
+- **Số liệu**: số khung, số mảnh theo loại, số khung có cảnh báo lệch, số mảnh chưa dùng.
+- **Hoạt ảnh**: mỗi nhóm (idle, walk, run, jump…) tự phát xem trước. Có nút Lật, Dừng, Tải sheet của nhóm.
+- **Khung hình**: bảng mọi khung. Đổi mảnh đầu/thân/chân ngay trong bảng, sửa ms. Cột Hông và Cổ hiện độ lệch đo theo điểm neo, kèm nhãn "khớp" hoặc cảnh báo.
+- **Thư viện mảnh**: chia theo Đầu / Thân / Chân, ghi rõ mảnh dùng ở bao nhiêu khung.
+
+Trang **Ghép khung** là trình chỉnh từng pixel như trước.
+
+## Cách nối đầu với thân như NSO
+
+Đã đo từ dữ liệu mảnh thật của game cùng kiểu NSO:
+
+- Mảnh đầu **không có cổ**, kết thúc ở cằm. Mặt sau là tóc đen phủ tới cằm.
+- Mép trên của mảnh thân là đường viền tối rộng khoảng nửa bề ngang đầu, ngay dưới là vai. Khi đặt đầu lên, cằm che giữa đường này, hai đầu thừa thành bóng dưới quai hàm.
+- **Đầu vẽ sau thân**. Cằm chồng xuống thân khoảng **12% chiều cao đầu** (2 px trên đầu 16 px).
+- Thân đè chân 2 px, có dải tối làm đường cạp ngay phía trên.
+
+Web mặc định dùng đúng quy tắc này (mục "Cách nối đầu với thân" trên trang Tổng quan).
