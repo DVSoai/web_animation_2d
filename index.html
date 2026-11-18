@@ -174,6 +174,7 @@ table.ftab input[type=number]{width:70px}
         <button class="pri" id="dSheet">Cắt tờ sprite nền xanh…</button>
         <button id="dAddImg">Thêm ảnh mảnh…</button>
         <button id="dAutoAll">Tự căn tất cả khung</button>
+        <button id="dNso" title="Đứng: thở 240/200 ms. Đi: 120 ms. Chạy: 80 ms. Thân nhún 1 px NSO ở khung bước qua, đầu trễ một nhịp.">Áp nhịp chuyển động NSO</button>
         <button id="dEdit">Mở trình ghép khung</button>
       </div>
       <div class="ch" style="margin:14px 0 8px"><h3>Xuất</h3></div>
@@ -478,6 +479,9 @@ function autoAlign(f){
     Lb.x=Math.round(wx-B.botC.c*Lb.s);Lb.y=Math.round(wy+ovHip-(B.trunkBot+1)*Lb.s);neck={x:Lb.x+B.neckC*Lb.s,y:Lb.y+B.neckY*Lb.s}}
   if(ih){const H=anchors(ih);const nx=neck?neck.x:0,ny=neck?neck.y:-200;const on=O.neckAuto?Math.round((H.trunkBot-H.top+1)*Lh.s*(+O.neckPct||12)/100):ovN;
     Lh.x=Math.round(nx-H.botC.c*Lh.s);Lh.y=Math.round(ny+on-(H.trunkBot+1)*Lh.s)}
+  // NSO-style bob, in NSO pixels (1 px = 1/16 of head height): body up b, head up b+h
+  const bob=f.bob;if(bob&&(bob.b||bob.h)){const hh=ih?(anchors(ih).trunkBot-anchors(ih).top+1)*Lh.s:120,U=hh/16;
+    if(ib)Lb.y=Math.round(Lb.y-(+bob.b||0)*U);if(ih)Lh.y=Math.round(Lh.y-((+bob.b||0)+(+bob.h||0))*U)}
 }
 function anchorPts(f){
   const P={};const pk=k=>{const l=f.L[k];const it=l&&lib(l.img);return it&&l.vis?{l,it,A:anchors(it)}:null};
@@ -821,25 +825,26 @@ function renderFrameTable(){
   sel.innerHTML=`<option value="all">Tất cả khung</option><option value="warn">Chỉ khung có cảnh báo</option>`+groups.map(g=>`<option value="g:${esc(g)}">Nhóm ${esc(g)}</option>`).join('');
   sel.value=[...sel.options].some(o=>o.value===prev)?prev:'all';const flt=sel.value;
   const t=$('#dFrames');const lay=[...S.layers].reverse();
-  t.innerHTML=`<thead><tr><th></th><th>Mã</th><th>Tên</th><th>ms</th>${lay.map(l=>`<th>${esc(l.label)}</th>`).join('')}<th>Hông (x · đè)</th><th>Cổ (x · chồng)</th><th>Kiểm tra</th><th></th></tr></thead><tbody></tbody>`;
+  t.innerHTML=`<thead><tr><th></th><th>Mã</th><th>Tên</th><th>ms</th>${lay.map(l=>`<th>${esc(l.label)}</th>`).join('')}<th title="Đơn vị: px NSO = 1/16 chiều cao đầu">Nhún thân · đầu</th><th>Hông (x · đè)</th><th>Cổ (x · chồng)</th><th>Kiểm tra</th><th></th></tr></thead><tbody></tbody>`;
   const tb=t.querySelector('tbody');
   S.frames.forEach((f,i)=>{ensureLayers(f);const ck=checkFrame(f);if(flt==='warn'&&!ck.w.length)return;if(flt.startsWith('g:')&&groupOf(f)!==flt.slice(2))return;
     const tr=document.createElement('tr');
     const cell=(v,bad)=>v===null?'<span class="small">—</span>':`<span class="meas"><span class="${bad?'bad':''}">${v}</span></span>`;
     tr.innerHTML=`<td></td><td><input type="text" value="${esc(f.id)}" data-a="id" style="width:90px"></td><td><input type="text" value="${esc(f.name)}" data-a="name" style="width:110px"></td><td><input type="number" value="${f.ms}" data-a="ms"></td>`+
       lay.map(l=>{const L=f.L[l.key];const opts=['<option value="">— trống —</option>'].concat(S.lib.filter(i=>i.kind===l.key||i.id===L.img).map(i=>`<option value="${i.id}" ${i.id===L.img?'selected':''}>${esc(i.name)}</option>`)).join('');return `<td><select data-k="${esc(l.key)}">${opts}</select></td>`}).join('')+
-      `<td>${ck.hip?cell(ck.hip.dx,Math.abs(ck.hip.dx)>3)+' · '+cell(ck.hip.ov,ck.hip.ov<2||ck.hip.ov>40):cell(null)}</td><td>${ck.neck?cell(ck.neck.dx,Math.abs(ck.neck.dx)>4)+' · '+cell(ck.neck.ov,ck.neck.ov<0||ck.neck.ov>24):cell(null)}</td>
+      `<td><div class="row" style="flex-wrap:nowrap;gap:3px"><input type="number" step="0.5" data-bob="b" value="${(f.bob&&f.bob.b)||0}" style="width:52px"><input type="number" step="0.5" data-bob="h" value="${(f.bob&&f.bob.h)||0}" style="width:52px"></div></td><td>${ck.hip?cell(ck.hip.dx,Math.abs(ck.hip.dx)>3)+' · '+cell(ck.hip.ov,ck.hip.ov<2||ck.hip.ov>40):cell(null)}</td><td>${ck.neck?cell(ck.neck.dx,Math.abs(ck.neck.dx)>4)+' · '+cell(ck.neck.ov,ck.neck.ov<0||ck.neck.ov>24):cell(null)}</td>
       <td>${ck.w.length?ck.w.map(w=>`<span class="badge bad">${esc(w)}</span>`).join(' '):'<span class="badge ok">khớp</span>'}${f.placed?' <span class="badge mut" title="Đã chỉnh tay, “Tự căn tất cả” vẫn căn lại">chỉnh tay</span>':''}</td>
       <td><div class="row" style="flex-wrap:nowrap"><button class="mini" data-b="edit">Sửa</button><button class="mini" data-b="auto">Tự căn</button><button class="mini" data-b="dup">⧉</button><button class="mini warn" data-b="del" ${S.frames.length<2?'disabled':''}>✕</button></div></td>`;
     const th=thumb(f);th.width=44;th.height=64;const tc=document.createElement('canvas');tc.width=44;tc.height=64;tc.getContext('2d').drawImage(thumb(f),0,0,44,64);tc.onclick=()=>{S.cur=i;setView('edit')};tc.title='Mở trong trình ghép';tr.children[0].appendChild(tc);
     tr.querySelectorAll('input[data-a]').forEach(inp=>inp.onchange=()=>change(()=>{const a=inp.dataset.a;if(a==='ms')f.ms=+inp.value||100;else if(a==='id')f.id=inp.value.trim()||f.id;else f.name=inp.value}));
+    tr.querySelectorAll('input[data-bob]').forEach(inp=>inp.onchange=()=>change(()=>{f.bob=f.bob||{b:0,h:0};f.bob[inp.dataset.bob]=+inp.value||0;autoAlign(f);f.placed=false}));
     tr.querySelectorAll('select[data-k]').forEach(se=>se.onchange=()=>change(()=>{f.L[se.dataset.k].img=se.value||null;autoAlign(f);f.placed=false}));
     tr.querySelector('[data-b=edit]').onclick=()=>{S.cur=i;setView('edit')};
     tr.querySelector('[data-b=auto]').onclick=()=>change(()=>{autoAlign(f);f.placed=false});
     tr.querySelector('[data-b=dup]').onclick=()=>{S.cur=i;dupFrame()};
     tr.querySelector('[data-b=del]').onclick=()=>ask('Xóa khung',`Xóa khung “${esc(f.name)}”?`,null,()=>change(()=>{S.frames.splice(i,1);S.cur=Math.min(S.cur,S.frames.length-1)}));
     tb.appendChild(tr)});
-  if(!tb.children.length)tb.innerHTML=`<tr><td colspan="${8+lay.length}"><div class="empty">Không có khung nào khớp bộ lọc.</div></td></tr>`}
+  if(!tb.children.length)tb.innerHTML=`<tr><td colspan="${9+lay.length}"><div class="empty">Không có khung nào khớp bộ lọc.</div></td></tr>`}
 function renderDashLib(){
   const el=$('#dLib');const used=usedCount();el.innerHTML='';
   if(!S.lib.length){el.innerHTML='<div class="empty">Thư viện trống.</div>';return}
@@ -857,11 +862,19 @@ function renderDashLib(){
       gr.appendChild(d)}
     el.appendChild(sec)}}
 async function renderDash(){if(!S)return;S.frames.forEach(ensureLayers);syncOpts();renderKpi();renderAnims();renderFrameTable();renderDashLib();renderProjCards((await DB.get('index'))||[])}
+const NSO_MOTION={
+  idle:{ms:[240,200],b:[1,0],h:[0,0]},
+  walk:{ms:[120],b:[0,1,0,1],h:[0,-.5,.5,-.5]},
+  run:{ms:[80],b:[0,1,0,1],h:[1,-1,1,-1]},
+  jump:{ms:[200],b:[0],h:[0]}};
+function applyNsoMotion(){S.frames.forEach(f=>{const g=groupOf(f),m=NSO_MOTION[g];if(!m)return;const idx=S.frames.filter(o=>groupOf(o)===g).indexOf(f);
+  f.ms=m.ms[idx%m.ms.length];f.bob={b:m.b[idx%m.b.length],h:m.h[idx%m.h.length]};if(!f.placed)autoAlign(f)})}
 function bindDash(){
   $('#navDash').onclick=()=>setView('dash');$('#navEdit').onclick=()=>setView('edit');$('#dEdit').onclick=()=>setView('edit');
   $('#dNew').onclick=()=>$('#bProjNew').click();$('#dImport').onclick=()=>$('#fImport').click();
   $('#dSheet').onclick=()=>$('#dlg').showModal();$('#dAddImg').onclick=()=>$('#fImg').click();
   $('#dAutoAll').onclick=()=>{change(()=>S.frames.forEach(f=>{autoAlign(f);f.placed=false}));toast('Đã tự căn tất cả')};
+  $('#dNso').onclick=()=>{change(applyNsoMotion);toast('Đã áp nhịp NSO: thở, nhún, đầu trễ nhịp')};
   $('#dZip').onclick=exportZip;$('#dRig').onclick=()=>$('#xJson').click();$('#dSheetPng').onclick=()=>$('#xSheet').click();$('#dProj').onclick=()=>$('#xProject').click();
   $('#dClean').onclick=()=>$('#bLibClean').click();$('#dFilter').onchange=renderFrameTable;$('#dDark').onchange=renderAnims;
   $('#dAddFrame').onclick=()=>{S.cur=S.frames.length-1;$('#fAdd').click()};
