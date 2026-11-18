@@ -197,7 +197,7 @@ table.ftab input[type=number]{width:70px}
         </div>
         <label class="chk" style="white-space:normal"><input type="checkbox" id="oFit">Thu mọi mảnh chân cùng một tỉ lệ để cạp quần chỉ rộng <input type="number" id="oFitPct" style="width:56px">% gấu áo (NSO: 13/15 ≈ 87%), áo phủ ra ngoài quần</label>
         <label class="chk" style="white-space:normal"><input type="checkbox" id="oHipAuto">Tự đè gấu áo xuống hết “nắp” cạp quần nếu mảnh chân có vẽ (NSO: đỉnh quần luôn nằm khuất dưới áo)</label>
-        <label class="chk" style="white-space:normal"><input type="checkbox" id="oNeckAuto">Tự tính độ chồng cằm như NSO: <input type="number" id="oNeckPct" style="width:56px">% chiều cao đầu (NSO: 2 px / đầu 16 px ≈ 12%)</label>
+        <label class="chk" style="white-space:normal"><input type="checkbox" id="oNeckAuto">Tự tính độ chồng cằm như NSO: <input type="number" id="oNeckPct" style="width:56px">% chiều cao đầu (NSO nhìn nghiêng: đầu đặt ngay trên thân, 0–2%; lún sâu hơn sẽ trông gù)</label>
         <label class="chk" style="white-space:normal"><input type="checkbox" id="oDark">Khi cắt tờ sprite: tô tối phần da cổ trong cổ áo (bỏ cổ như NSO)</label>
         <label class="chk" style="white-space:normal"><input type="checkbox" id="oFringe">Khi cắt tờ sprite: xóa viền xanh sót quanh mép mảnh</label>
         <div class="row"><button class="pri" id="oApply">Áp dụng và tự căn lại mọi khung</button></div>
@@ -402,10 +402,10 @@ function defaultFrames(layers){
   ['run-0','Chạy 1',110],['run-1','Chạy 2',110],['run-2','Chạy 3',110],['run-3','Chạy 4',110],['jump-0','Nhảy 1',200],['jump-1','Nhảy 2',200],['jump-2','Nhảy 3',200],['jump-3','Nhảy 4',200]];
   return L.map(([id,name,ms])=>({id,name,ms,L:Object.fromEntries(layers.map(l=>[l.key,emptyL()]))}));
 }
-function defOpts(mode){return {hipAuto:true,neckMode:mode||'headTop',neckAuto:mode!=='bodyTop',neckPct:12,ovNeck:mode==='bodyTop'?10:12,ovHip:8,darkNeck:true,defringe:true,fitLegs:true,fitPct:88}}
+function defOpts(mode){return {hipAuto:true,neckMode:mode||'headTop',neckAuto:mode!=='bodyTop',neckPct:2,ovNeck:mode==='bodyTop'?10:12,ovHip:8,darkNeck:true,defringe:true,fitLegs:true,fitPct:88}}
 function newProject(name){const layers=[{key:'legs',label:'Chân'},{key:'body',label:'Thân'},{key:'head',label:'Đầu'}];
   return {v:2,name:name||'Nhân vật mới',canvas:{w:480,h:480,rx:240,ry:400},layers,lib:[],frames:defaultFrames(layers),cur:0,sel:'body',opts:defOpts('headTop')}}
-function withOpts(p){if(p.opts&&p.opts.fitPct===4){p.opts.fitPct=88;p.opts.fitLegs=true}if(p.opts&&p.opts.hipAuto===undefined)p.opts.hipAuto=true;if(p.opts&&p.opts.neckPct===undefined){p.opts.neckPct=12;p.opts.neckAuto=p.opts.neckMode!=='bodyTop'}if(!p.opts){const hi=p.layers.findIndex(l=>l.key==='head'),bi=p.layers.findIndex(l=>l.key==='body');p.opts=defOpts(hi>bi&&bi>=0?'headTop':'bodyTop')}return p}
+function withOpts(p){if(p.opts&&p.opts.neckPct===12&&!p.opts.neckPctSet)p.opts.neckPct=2;if(p.opts&&p.opts.fitPct===4){p.opts.fitPct=88;p.opts.fitLegs=true}if(p.opts&&p.opts.hipAuto===undefined)p.opts.hipAuto=true;if(p.opts&&p.opts.neckPct===undefined){p.opts.neckPct=2;p.opts.neckAuto=p.opts.neckMode!=='bodyTop'}if(!p.opts){const hi=p.layers.findIndex(l=>l.key==='head'),bi=p.layers.findIndex(l=>l.key==='body');p.opts=defOpts(hi>bi&&bi>=0?'headTop':'bodyTop')}return p}
 function migrate(p){
   if(p.v===2)return withOpts(p);
   // v1: order + frames[].layers{}
@@ -474,14 +474,18 @@ function autoAlign(f){
   let waist=null,neck=null;
   if(il){const A=anchors(il);if(fit){const ls=legScale(pct);if(ls)Ll.s=ls}
     Ll.x=Math.round(-A.topC.c*Ll.s);Ll.y=Math.round(-(A.bot+1)*Ll.s);waist={x:0,y:Ll.y+A.top*Ll.s}}
+  // NSO bob: in "run" the whole sprite bounces; elsewhere the body rises on the legs, so the hem must still cover the waistband at its highest
+  const grp=groupOf(f),bounce=grp==='run',hh0=ih?(anchors(ih).trunkBot-anchors(ih).top+1)*(Lh?Lh.s:1):120,U=hh0/16;
+  const maxB=bounce?0:Math.max(0,...S.frames.filter(o=>groupOf(o)===grp).map(o=>(o.bob&&+o.bob.b)||0));
   let ovHip=ovH;if(il&&O.hipAuto){const ld=lidDepth(il)*Ll.s;if(ld)ovHip=Math.max(ovH,Math.round(ld+2))}
+  ovHip+=Math.round(maxB*U);
   if(ib){const B=anchors(ib);const wx=waist?waist.x:0,wy=waist?waist.y:-120;
     Lb.x=Math.round(wx-B.botC.c*Lb.s);Lb.y=Math.round(wy+ovHip-(B.trunkBot+1)*Lb.s);neck={x:Lb.x+B.neckC*Lb.s,y:Lb.y+B.neckY*Lb.s}}
-  if(ih){const H=anchors(ih);const nx=neck?neck.x:0,ny=neck?neck.y:-200;const on=O.neckAuto?Math.round((H.trunkBot-H.top+1)*Lh.s*(+O.neckPct||12)/100):ovN;
+  if(ih){const H=anchors(ih);const nx=neck?neck.x:0,ny=neck?neck.y:-200;const on=O.neckAuto?Math.round((H.trunkBot-H.top+1)*Lh.s*(+O.neckPct||0)/100):ovN;
     Lh.x=Math.round(nx-H.botC.c*Lh.s);Lh.y=Math.round(ny+on-(H.trunkBot+1)*Lh.s)}
   // NSO-style bob, in NSO pixels (1 px = 1/16 of head height): body up b, head up b+h
-  const bob=f.bob;if(bob&&(bob.b||bob.h)){const hh=ih?(anchors(ih).trunkBot-anchors(ih).top+1)*Lh.s:120,U=hh/16;
-    if(ib)Lb.y=Math.round(Lb.y-(+bob.b||0)*U);if(ih)Lh.y=Math.round(Lh.y-((+bob.b||0)+(+bob.h||0))*U)}
+  const bob=f.bob;if(bob&&(bob.b||bob.h)){const b=(+bob.b||0)*U,hd=Math.min(0,+bob.h||0)*U;
+    if(bounce&&il)Ll.y=Math.round(Ll.y-b);if(ib)Lb.y=Math.round(Lb.y-b);if(ih)Lh.y=Math.round(Lh.y-b-hd)}
 }
 function anchorPts(f){
   const P={};const pk=k=>{const l=f.L[k];const it=l&&lib(l.img);return it&&l.vis?{l,it,A:anchors(it)}:null};
@@ -864,11 +868,11 @@ function renderDashLib(){
 async function renderDash(){if(!S)return;S.frames.forEach(ensureLayers);syncOpts();renderKpi();renderAnims();renderFrameTable();renderDashLib();renderProjCards((await DB.get('index'))||[])}
 const NSO_MOTION={
   idle:{ms:[240,200],b:[1,0],h:[0,0]},
-  walk:{ms:[120],b:[0,1,0,1],h:[0,-.5,.5,-.5]},
-  run:{ms:[80],b:[0,1,0,1],h:[1,-1,1,-1]},
+  walk:{ms:[120],b:[0,1,0,1],h:[0,-.5,0,-.5]},
+  run:{ms:[80],b:[0,1,0,1],h:[0,-1,0,-1]},
   jump:{ms:[200],b:[0],h:[0]}};
 function applyNsoMotion(){S.frames.forEach(f=>{const g=groupOf(f),m=NSO_MOTION[g];if(!m)return;const idx=S.frames.filter(o=>groupOf(o)===g).indexOf(f);
-  f.ms=m.ms[idx%m.ms.length];f.bob={b:m.b[idx%m.b.length],h:m.h[idx%m.h.length]};if(!f.placed)autoAlign(f)})}
+  f.ms=m.ms[idx%m.ms.length];f.bob={b:m.b[idx%m.b.length],h:m.h[idx%m.h.length]}});S.frames.forEach(f=>{if(!f.placed)autoAlign(f)})}
 function bindDash(){
   $('#navDash').onclick=()=>setView('dash');$('#navEdit').onclick=()=>setView('edit');$('#dEdit').onclick=()=>setView('edit');
   $('#dNew').onclick=()=>$('#bProjNew').click();$('#dImport').onclick=()=>$('#fImport').click();
@@ -883,7 +887,7 @@ function bindDash(){
   $('#oFit').onchange=e=>change(()=>{S.opts.fitLegs=e.target.checked;S.frames.forEach(f=>{if(!e.target.checked&&f.L.legs)f.L.legs.s=1;if(!f.placed)autoAlign(f)})});
   $('#oFitPct').onchange=e=>change(()=>{S.opts.fitPct=+e.target.value||88;S.frames.forEach(f=>{if(!f.placed)autoAlign(f)})});
   $('#oHipAuto').onchange=e=>change(()=>{S.opts.hipAuto=e.target.checked;S.frames.forEach(f=>{if(!f.placed)autoAlign(f)})});
-  $('#oNeckAuto').onchange=e=>change(()=>{S.opts.neckAuto=e.target.checked;S.frames.forEach(f=>{if(!f.placed)autoAlign(f)})});$('#oNeckPct').onchange=e=>change(()=>{S.opts.neckPct=+e.target.value||12;S.frames.forEach(f=>{if(!f.placed)autoAlign(f)})});
+  $('#oNeckAuto').onchange=e=>change(()=>{S.opts.neckAuto=e.target.checked;S.frames.forEach(f=>{if(!f.placed)autoAlign(f)})});$('#oNeckPct').onchange=e=>change(()=>{S.opts.neckPct=+e.target.value||0;S.opts.neckPctSet=true;S.frames.forEach(f=>{if(!f.placed)autoAlign(f)})});
   $('#oDark').onchange=e=>change(()=>S.opts.darkNeck=e.target.checked);$('#oFringe').onchange=e=>change(()=>S.opts.defringe=e.target.checked);
   $('#oApply').onclick=()=>{change(()=>S.frames.forEach(f=>{autoAlign(f);f.placed=false}));toast('Đã căn lại mọi khung')};
   // editor-side inputs write to the same options
