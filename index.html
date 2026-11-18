@@ -194,6 +194,7 @@ table.ftab input[type=number]{width:70px}
           <div class="f">Cằm chồng xuống cổ áo (px)<input type="number" id="oNeck"></div>
           <div class="f">Gấu áo đè cạp quần (px)<input type="number" id="oHip"></div>
         </div>
+        <label class="chk" style="white-space:normal"><input type="checkbox" id="oHipAuto">Tự đè gấu áo xuống hết “nắp” cạp quần nếu mảnh chân có vẽ (NSO: đỉnh quần luôn nằm khuất dưới áo)</label>
         <label class="chk" style="white-space:normal"><input type="checkbox" id="oNeckAuto">Tự tính độ chồng cằm như NSO: <input type="number" id="oNeckPct" style="width:56px">% chiều cao đầu (NSO: 2 px / đầu 16 px ≈ 12%)</label>
         <label class="chk" style="white-space:normal"><input type="checkbox" id="oDark">Khi cắt tờ sprite: tô tối phần da cổ trong cổ áo (bỏ cổ như NSO)</label>
         <label class="chk" style="white-space:normal"><input type="checkbox" id="oFringe">Khi cắt tờ sprite: xóa viền xanh sót quanh mép mảnh</label>
@@ -399,10 +400,10 @@ function defaultFrames(layers){
   ['run-0','Chạy 1',110],['run-1','Chạy 2',110],['run-2','Chạy 3',110],['run-3','Chạy 4',110],['jump-0','Nhảy 1',200],['jump-1','Nhảy 2',200],['jump-2','Nhảy 3',200],['jump-3','Nhảy 4',200]];
   return L.map(([id,name,ms])=>({id,name,ms,L:Object.fromEntries(layers.map(l=>[l.key,emptyL()]))}));
 }
-function defOpts(mode){return {neckMode:mode||'headTop',neckAuto:mode!=='bodyTop',neckPct:12,ovNeck:mode==='bodyTop'?10:12,ovHip:8,darkNeck:true,defringe:true,fitLegs:false,fitPct:4}}
+function defOpts(mode){return {hipAuto:true,neckMode:mode||'headTop',neckAuto:mode!=='bodyTop',neckPct:12,ovNeck:mode==='bodyTop'?10:12,ovHip:8,darkNeck:true,defringe:true,fitLegs:false,fitPct:4}}
 function newProject(name){const layers=[{key:'legs',label:'Chân'},{key:'body',label:'Thân'},{key:'head',label:'Đầu'}];
   return {v:2,name:name||'Nhân vật mới',canvas:{w:480,h:480,rx:240,ry:400},layers,lib:[],frames:defaultFrames(layers),cur:0,sel:'body',opts:defOpts('headTop')}}
-function withOpts(p){if(p.opts&&p.opts.neckPct===undefined){p.opts.neckPct=12;p.opts.neckAuto=p.opts.neckMode!=='bodyTop'}if(!p.opts){const hi=p.layers.findIndex(l=>l.key==='head'),bi=p.layers.findIndex(l=>l.key==='body');p.opts=defOpts(hi>bi&&bi>=0?'headTop':'bodyTop')}return p}
+function withOpts(p){if(p.opts&&p.opts.hipAuto===undefined)p.opts.hipAuto=true;if(p.opts&&p.opts.neckPct===undefined){p.opts.neckPct=12;p.opts.neckAuto=p.opts.neckMode!=='bodyTop'}if(!p.opts){const hi=p.layers.findIndex(l=>l.key==='head'),bi=p.layers.findIndex(l=>l.key==='body');p.opts=defOpts(hi>bi&&bi>=0?'headTop':'bodyTop')}return p}
 function migrate(p){
   if(p.v===2)return withOpts(p);
   // v1: order + frames[].layers{}
@@ -430,7 +431,7 @@ function after(){scheduleSave();if(isDash())renderDash();else renderAll()}
 // ================= images & anchors =================
 async function loadImg(it){
   if(IM[it.id])return IM[it.id];const im=new Image();im.src=it.src;await im.decode();IM[it.id]=im;it.w=im.naturalWidth;it.h=im.naturalHeight;POOL[it.id]=it;return im}
-function dropCache(id){delete IM[id];delete AN[id];delete AC[id]}
+function dropCache(id){delete IM[id];delete AN[id];delete AC[id];delete LD[id]}
 function alphaOf(it){if(AC[it.id])return AC[it.id];const c=document.createElement('canvas');c.width=it.w;c.height=it.h;const g=c.getContext('2d');g.drawImage(IM[it.id],0,0);
   const d=g.getImageData(0,0,it.w,it.h).data;const a=new Uint8Array(it.w*it.h);for(let i=0;i<a.length;i++)a[i]=d[i*4+3]>128?1:0;return AC[it.id]=a}
 function anchorsMask(a,w,h){
@@ -449,6 +450,11 @@ function anchorsMask(a,w,h){
   const nc=avg(neckY+1,neckY+5,1,botC.c);
   return {top,bot,cx,topC:avg(top+2,top+8,1,cx),botC,trunkBot:tb,hemW,neckY,neckC:nc.c};
 }
+// depth of a drawn waistband "lid" on a legs piece: the dark rim below the top outline, measured down the centre column
+const LD={};
+function lidDepth(it){if(LD[it.id]!==undefined)return LD[it.id];const A=anchors(it),w=it.w,h=it.h;const c=document.createElement('canvas');c.width=w;c.height=h;const g=c.getContext('2d');g.drawImage(IM[it.id],0,0);const d=g.getImageData(0,0,w,h).data;
+  const cx=Math.round(A.topC.c),lim=Math.min(h-1,A.top+Math.round((A.bot-A.top)*.35));const lum=y=>{let s=0,n=0;for(let x=cx-3;x<=cx+3;x++){if(x<0||x>=w)continue;const i=(y*w+x)*4;if(d[i+3]<128)continue;s+=(d[i]+d[i+1]+d[i+2])/3;n++}return n?s/n:255};
+  let y=A.top;while(y<lim&&lum(y)<45)y++;const lightStart=y;while(y<lim&&lum(y)>=45)y++;if(y>=lim||y-lightStart<4)return LD[it.id]=0;while(y<lim&&lum(y)<45)y++;return LD[it.id]=y-A.top}
 function anchors(it){if(AN[it.id])return AN[it.id];return AN[it.id]=anchorsMask(alphaOf(it),it.w,it.h)}
 
 // ================= geometry / align =================
@@ -460,8 +466,9 @@ function autoAlign(f){
   let waist=null,neck=null;
   if(il){const A=anchors(il);if(fit&&ib){const B=anchors(ib);const hw=B.hemW*Lb.s;if(A.topC.w>0&&hw>0)Ll.s=+((hw*(1+pct))/A.topC.w).toFixed(3)}
     Ll.x=Math.round(-A.topC.c*Ll.s);Ll.y=Math.round(-(A.bot+1)*Ll.s);waist={x:0,y:Ll.y+A.top*Ll.s}}
+  let ovHip=ovH;if(il&&O.hipAuto){const ld=lidDepth(il)*Ll.s;if(ld)ovHip=Math.max(ovH,Math.round(ld+2))}
   if(ib){const B=anchors(ib);const wx=waist?waist.x:0,wy=waist?waist.y:-120;
-    Lb.x=Math.round(wx-B.botC.c*Lb.s);Lb.y=Math.round(wy+ovH-(B.trunkBot+1)*Lb.s);neck={x:Lb.x+B.neckC*Lb.s,y:Lb.y+B.neckY*Lb.s}}
+    Lb.x=Math.round(wx-B.botC.c*Lb.s);Lb.y=Math.round(wy+ovHip-(B.trunkBot+1)*Lb.s);neck={x:Lb.x+B.neckC*Lb.s,y:Lb.y+B.neckY*Lb.s}}
   if(ih){const H=anchors(ih);const nx=neck?neck.x:0,ny=neck?neck.y:-200;const on=O.neckAuto?Math.round((H.trunkBot-H.top+1)*Lh.s*(+O.neckPct||12)/100):ovN;
     Lh.x=Math.round(nx-H.botC.c*Lh.s);Lh.y=Math.round(ny+on-(H.trunkBot+1)*Lh.s)}
 }
@@ -745,7 +752,7 @@ function usedCount(){const m={};S.frames.forEach(f=>Object.values(f.L).forEach(l
 function checkFrame(f){
   const P=anchorPts(f),w=[];let hip=null,neck=null;const r1=v=>Math.round(v*10)/10;
   for(const k of ['legs','body','head']){if(S.layers.find(l=>l.key===k)&&!(f.L[k]&&f.L[k].img))w.push('thiếu '+label(k).toLowerCase())}
-  if(P.hem&&P.waist){hip={dx:r1(P.hem.x-P.waist.x),ov:r1(P.hem.y-P.waist.y)};if(Math.abs(hip.dx)>3)w.push('hông lệch ngang');if(hip.ov<2)w.push('áo không đè cạp');if(hip.ov>24)w.push('áo đè quá sâu')}
+  if(P.hem&&P.waist){hip={dx:r1(P.hem.x-P.waist.x),ov:r1(P.hem.y-P.waist.y)};if(Math.abs(hip.dx)>3)w.push('hông lệch ngang');if(hip.ov<2)w.push('áo không đè cạp');if(hip.ov>40)w.push('áo đè quá sâu')}
   if(P.chin&&P.neck){neck={dx:r1(P.chin.x-P.neck.x),ov:r1(P.chin.y-P.neck.y)};if(Math.abs(neck.dx)>4)w.push('đầu lệch ngang');if(neck.ov<0)w.push('hở cổ');if(neck.ov>24)w.push('đầu lún sâu')}
   return {hip,neck,w}}
 function renderProjCards(idx){const el=$('#dProjs');if(!el)return;idx=[...idx].sort((a,b)=>b.updated-a.updated);
@@ -766,10 +773,10 @@ function renderKpi(){
    <div class="kpi"><div class="l">Mảnh trong thư viện</div><div class="v">${S.lib.length}</div><div class="s">${S.layers.map(l=>`${esc(l.label)} ${byK[l.key]||0}`).join(' · ')}${byK.other?` · Khác ${byK.other}`:''}</div></div>
    <div class="kpi ${bad?'bad':'ok'}"><div class="l">Khung có cảnh báo</div><div class="v">${bad}</div><div class="s">${bad?'Xem cột “Kiểm tra” trong bảng khung':'Hông và cổ đều khớp'}</div></div>
    <div class="kpi"><div class="l">Mảnh chưa dùng</div><div class="v">${unused}</div><div class="s">${unused?'Bấm “Dọn mảnh thừa” để xóa':'Mọi mảnh đều được dùng'}</div></div>
-   <div class="kpi"><div class="l">Nối cổ</div><div class="v" style="font-size:18px">${O.neckMode==='bodyTop'?'Thân đè đầu':'Bỏ cổ'}</div><div class="s">cằm ${O.neckAuto?O.neckPct+'% đầu':O.ovNeck+'px'} · gấu áo ${O.ovHip}px</div></div>`}
+   <div class="kpi"><div class="l">Nối cổ</div><div class="v" style="font-size:18px">${O.neckMode==='bodyTop'?'Thân đè đầu':'Bỏ cổ'}</div><div class="s">cằm ${O.neckAuto?O.neckPct+'% đầu':O.ovNeck+'px'} · gấu áo ${O.hipAuto?'tự che nắp cạp':O.ovHip+'px'}</div></div>`}
 function syncOpts(){const O=S.opts;
   document.querySelectorAll('input[name=neckMode]').forEach(r=>{r.checked=r.value===O.neckMode;r.closest('label').classList.toggle('on',r.checked)});
-  $('#oNeck').value=O.ovNeck;$('#oNeck').disabled=!!O.neckAuto;$('#oNeckAuto').checked=!!O.neckAuto;$('#oNeckPct').value=O.neckPct;$('#oHip').value=O.ovHip;$('#oDark').checked=!!O.darkNeck;$('#oFringe').checked=!!O.defringe;
+  $('#oNeck').value=O.ovNeck;$('#oNeck').disabled=!!O.neckAuto;$('#oNeckAuto').checked=!!O.neckAuto;$('#oHipAuto').checked=!!O.hipAuto;$('#oNeckPct').value=O.neckPct;$('#oHip').value=O.ovHip;$('#oDark').checked=!!O.darkNeck;$('#oFringe').checked=!!O.defringe;
   $('#ovNeck').value=O.ovNeck;$('#ovHip').value=O.ovHip;$('#fitLegs').checked=!!O.fitLegs;$('#fitPct').value=O.fitPct}
 function applyNeckMode(m){const hi=S.layers.findIndex(l=>l.key==='head');if(hi<0||!S.layers.find(l=>l.key==='body'))return;
   const H=S.layers.splice(hi,1)[0];const bi=S.layers.findIndex(l=>l.key==='body');S.layers.splice(m==='headTop'?bi+1:bi,0,H);S.opts.neckMode=m}
@@ -814,7 +821,7 @@ function renderFrameTable(){
     const cell=(v,bad)=>v===null?'<span class="small">—</span>':`<span class="meas"><span class="${bad?'bad':''}">${v}</span></span>`;
     tr.innerHTML=`<td></td><td><input type="text" value="${esc(f.id)}" data-a="id" style="width:90px"></td><td><input type="text" value="${esc(f.name)}" data-a="name" style="width:110px"></td><td><input type="number" value="${f.ms}" data-a="ms"></td>`+
       lay.map(l=>{const L=f.L[l.key];const opts=['<option value="">— trống —</option>'].concat(S.lib.filter(i=>i.kind===l.key||i.id===L.img).map(i=>`<option value="${i.id}" ${i.id===L.img?'selected':''}>${esc(i.name)}</option>`)).join('');return `<td><select data-k="${esc(l.key)}">${opts}</select></td>`}).join('')+
-      `<td>${ck.hip?cell(ck.hip.dx,Math.abs(ck.hip.dx)>3)+' · '+cell(ck.hip.ov,ck.hip.ov<2||ck.hip.ov>24):cell(null)}</td><td>${ck.neck?cell(ck.neck.dx,Math.abs(ck.neck.dx)>4)+' · '+cell(ck.neck.ov,ck.neck.ov<0||ck.neck.ov>24):cell(null)}</td>
+      `<td>${ck.hip?cell(ck.hip.dx,Math.abs(ck.hip.dx)>3)+' · '+cell(ck.hip.ov,ck.hip.ov<2||ck.hip.ov>40):cell(null)}</td><td>${ck.neck?cell(ck.neck.dx,Math.abs(ck.neck.dx)>4)+' · '+cell(ck.neck.ov,ck.neck.ov<0||ck.neck.ov>24):cell(null)}</td>
       <td>${ck.w.length?ck.w.map(w=>`<span class="badge bad">${esc(w)}</span>`).join(' '):'<span class="badge ok">khớp</span>'}${f.placed?' <span class="badge mut" title="Đã chỉnh tay, “Tự căn tất cả” vẫn căn lại">chỉnh tay</span>':''}</td>
       <td><div class="row" style="flex-wrap:nowrap"><button class="mini" data-b="edit">Sửa</button><button class="mini" data-b="auto">Tự căn</button><button class="mini" data-b="dup">⧉</button><button class="mini warn" data-b="del" ${S.frames.length<2?'disabled':''}>✕</button></div></td>`;
     const th=thumb(f);th.width=44;th.height=64;const tc=document.createElement('canvas');tc.width=44;tc.height=64;tc.getContext('2d').drawImage(thumb(f),0,0,44,64);tc.onclick=()=>{S.cur=i;setView('edit')};tc.title='Mở trong trình ghép';tr.children[0].appendChild(tc);
@@ -853,6 +860,7 @@ function bindDash(){
   $('#dAddFrame').onclick=()=>{S.cur=S.frames.length-1;$('#fAdd').click()};
   document.querySelectorAll('input[name=neckMode]').forEach(r=>r.onchange=()=>change(()=>{applyNeckMode(r.value);S.opts.neckAuto=r.value!=='bodyTop';S.opts.ovNeck=r.value==='bodyTop'?10:12;S.frames.forEach(f=>{if(!f.placed)autoAlign(f)})}));
   $('#oNeck').onchange=e=>change(()=>S.opts.ovNeck=+e.target.value||0);$('#oHip').onchange=e=>change(()=>S.opts.ovHip=+e.target.value||0);
+  $('#oHipAuto').onchange=e=>change(()=>{S.opts.hipAuto=e.target.checked;S.frames.forEach(f=>{if(!f.placed)autoAlign(f)})});
   $('#oNeckAuto').onchange=e=>change(()=>{S.opts.neckAuto=e.target.checked;S.frames.forEach(f=>{if(!f.placed)autoAlign(f)})});$('#oNeckPct').onchange=e=>change(()=>{S.opts.neckPct=+e.target.value||12;S.frames.forEach(f=>{if(!f.placed)autoAlign(f)})});
   $('#oDark').onchange=e=>change(()=>S.opts.darkNeck=e.target.checked);$('#oFringe').onchange=e=>change(()=>S.opts.defringe=e.target.checked);
   $('#oApply').onclick=()=>{change(()=>S.frames.forEach(f=>{autoAlign(f);f.placed=false}));toast('Đã căn lại mọi khung')};
@@ -864,7 +872,7 @@ function bindDash(){
 // ================= projects =================
 async function openProject(id,obj){
   if(obj){PID=uid();S=obj}else{const p=await DB.get('proj:'+id);if(!p){toast('Không mở được dự án');return}PID=id;S=migrate(p)}
-  for(const k in IM)delete IM[k];for(const k in AN)delete AN[k];for(const k in AC)delete AC[k];
+  for(const k in IM)delete IM[k];for(const k in AN)delete AN[k];for(const k in AC)delete AC[k];for(const k in LD)delete LD[k];
   for(const it of S.lib){try{await loadImg(it)}catch(e){}}
   hist=[];redo=[];view.pick=null;S.cur=Math.min(S.cur||0,S.frames.length-1);await saveNow();renderProjects((await DB.get('index'))||[]);if(isDash())renderDash();else{renderAll();fitZoom()}
 }
