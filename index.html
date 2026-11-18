@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Xưởng ghép nhân vật · đầu – thân – chân</title>
+<style>
+:root{--bg:#f3f1ec;--panel:#fffdf8;--line:#ddd6c8;--ink:#2b2a27;--mute:#7a7468;--acc:#2f5d4f;--acc2:#b4492f;--sel:#e7f0ea;--dark:#24342e}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink)}
+header{display:flex;align-items:center;gap:10px;padding:8px 14px;background:var(--dark);color:#f3efe6;flex-wrap:wrap}
+header h1{font-size:16px;margin:0;font-weight:600}
+header .sub{color:#b9c7bf;font-size:12px}
+header .sp{flex:1}
+header select,header input{width:auto;min-width:180px}
+header button{background:#33473f;color:#f3efe6;border-color:#46605a}
+header button:hover{background:#3d554b}
+button{font:inherit;border:1px solid var(--line);background:#fff;border-radius:7px;padding:5px 10px;cursor:pointer;color:var(--ink);white-space:nowrap}
+button:hover{border-color:#b9ae98}
+button:disabled{opacity:.45;cursor:default}
+button.pri{background:var(--acc);color:#fff;border-color:var(--acc)}
+button.warn{color:var(--acc2)}
+button.mini{padding:2px 7px;font-size:12px}
+input[type=number],input[type=text],select{font:inherit;border:1px solid var(--line);border-radius:6px;padding:4px 6px;background:#fff;width:100%;color:var(--ink)}
+label.chk{display:flex;gap:6px;align-items:center;font-size:13px;cursor:pointer;white-space:nowrap}
+.wrap{display:grid;grid-template-columns:280px minmax(0,1fr) 310px;gap:12px;padding:12px;height:calc(100vh - 50px)}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px;overflow:auto}
+.panel h2{font-size:12px;margin:0 0 8px;text-transform:uppercase;letter-spacing:.05em;color:var(--mute);display:flex;align-items:center;gap:6px}
+.panel h2 .sp{flex:1}
+.panel section{margin-bottom:18px}
+.drop{border:2px dashed var(--line);border-radius:9px;padding:12px;text-align:center;color:var(--mute);cursor:pointer;font-size:13px}
+.drop.hot{border-color:var(--acc);background:var(--sel)}
+.lib{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.lib .it{border:1px solid var(--line);border-radius:7px;padding:3px;background:#fff;cursor:pointer;position:relative}
+.lib .it img{width:100%;height:58px;object-fit:contain;display:block;background:repeating-conic-gradient(#eee 0 25%,#fff 0 50%) 0 0/10px 10px}
+.lib .it .n{font-size:10px;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lib .it .k{position:absolute;top:2px;left:2px;font-size:9px;background:var(--dark);color:#fff;border-radius:4px;padding:0 4px;max-width:90%;overflow:hidden;white-space:nowrap}
+.lib .it.inuse{box-shadow:inset 0 0 0 2px #9fbfb3}
+.lib .it.pick{outline:2px solid var(--acc2)}
+.libedit{border:1px solid var(--line);border-radius:8px;padding:8px;margin-top:8px;background:#fff}
+.center{display:flex;flex-direction:column;gap:8px;min-width:0;min-height:0}
+.tools{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.stage{flex:1;background:#e4e0d6;border:1px solid var(--line);border-radius:10px;overflow:auto;min-height:300px;position:relative;display:grid;place-items:center}
+canvas#cv{background:#fff;box-shadow:0 1px 6px rgba(0,0,0,.12);cursor:grab;touch-action:none;margin:16px}
+.status{font:12px ui-monospace,Menlo,Consolas,monospace;color:var(--mute);min-height:18px}
+.status b{color:var(--ink);font-weight:600}
+.status .bad{color:var(--acc2)}
+.timeline{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;min-height:120px}
+.fr{border:1px solid var(--line);border-radius:8px;background:#fff;padding:4px;cursor:pointer;flex:0 0 auto;text-align:center}
+.fr canvas{display:block;background:#faf8f3;border-radius:4px}
+.fr .n{font-size:11px;max-width:64px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fr.cur{outline:2px solid var(--acc)}
+.fr.play{outline:2px solid var(--acc2)}
+.layer{border:1px solid var(--line);border-radius:8px;padding:8px;margin-bottom:8px;background:#fff}
+.layer.sel{border-color:var(--acc);background:var(--sel)}
+.layer .hd{display:flex;align-items:center;gap:4px;margin-bottom:6px}
+.layer .hd b{flex:1;cursor:pointer}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+.small{font-size:12px;color:var(--mute)}
+.f{display:flex;flex-direction:column;gap:2px;font-size:12px;color:var(--mute)}
+.row{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+dialog{border:1px solid var(--line);border-radius:12px;padding:0;max-width:min(1100px,96vw);width:96vw;color:var(--ink)}
+dialog.sm{width:min(560px,96vw)}
+dialog::backdrop{background:rgba(20,28,25,.45)}
+dialog .dh{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--line);background:var(--panel);position:sticky;top:0}
+dialog .dh b{flex:1}
+dialog .db{padding:14px;max-height:75vh;overflow:auto}
+.pieces{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin-top:10px}
+.pc{border:1px solid var(--line);border-radius:8px;padding:6px;background:#fff}
+.pc img{width:100%;height:80px;object-fit:contain;background:repeating-conic-gradient(#eee 0 25%,#fff 0 50%) 0 0/10px 10px;cursor:pointer}
+.pc.off{opacity:.35}
+#toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--dark);color:#fff;padding:8px 14px;border-radius:8px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:99}
+#toast.show{opacity:1}
+pre.json{background:#1f2622;color:#d9e4dc;padding:10px;border-radius:8px;font-size:11px;max-height:240px;overflow:auto;white-space:pre-wrap}
+table.keys{border-collapse:collapse;width:100%}
+table.keys td{padding:4px 6px;border-bottom:1px solid var(--line);font-size:13px}
+table.keys td:first-child{font-family:ui-monospace,Menlo,monospace;white-space:nowrap;width:150px}
+.legend{display:flex;gap:10px;flex-wrap:wrap;font-size:11px;color:var(--mute)}
+.legend i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:3px;vertical-align:-1px}
+@media (max-width:1150px){.wrap{grid-template-columns:1fr;height:auto}.stage{min-height:420px}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Xưởng ghép nhân vật</h1><span class="sub">đầu – thân – chân · kiểu NSO</span>
+  <span class="sp"></span>
+  <select id="projSel" title="Dự án đang mở"></select>
+  <button id="bProjNew">+ Dự án</button>
+  <button id="bProjRename">Đổi tên</button>
+  <button id="bProjDel">Xóa dự án</button>
+  <button id="bImport">Nhập ZIP / JSON…</button>
+  <button id="bUndo" title="Ctrl+Z">↶</button><button id="bRedo" title="Ctrl+Y">↷</button>
+  <button id="bHelp">Phím tắt</button>
+  <input type="file" id="fImport" accept=".zip,.json,application/zip,application/json" hidden>
+</header>
+
+<div class="wrap">
+  <!-- LEFT -->
+  <div class="panel">
+    <section>
+      <h2>Thêm ảnh</h2>
+      <div class="drop" id="drop">Thả ảnh vào đây hoặc bấm để chọn<br><span class="small">PNG trong suốt từng mảnh · tên file có head / body / legs / run-0… sẽ tự nhận</span></div>
+      <input type="file" id="fImg" accept="image/*" multiple hidden>
+      <div class="row" style="margin-top:8px"><button id="bSheet" class="pri">Cắt tờ sprite nền xanh…</button></div>
+    </section>
+    <section>
+      <h2>Thư viện mảnh <span id="libCount" class="small"></span><span class="sp"></span><button class="mini" id="bLibClean" title="Xóa các mảnh không dùng ở khung nào">Dọn</button></h2>
+      <div class="small" style="margin-bottom:6px">Bấm: gán vào khung hiện tại (đúng lớp theo loại) và mở phần sửa mảnh.</div>
+      <div class="lib" id="lib"></div>
+      <div id="libEdit"></div>
+    </section>
+    <section>
+      <h2>Lớp (sau → trước)</h2>
+      <div id="layerDefs"></div>
+      <div class="row" style="margin-top:6px"><input type="text" id="newLayer" placeholder="Tên lớp mới, vd Vũ khí" style="flex:1"><button id="bAddLayer">Thêm</button></div>
+    </section>
+    <section>
+      <h2>Khung &amp; điểm gốc</h2>
+      <div class="g2">
+        <div class="f">Rộng<input type="number" id="cW"></div>
+        <div class="f">Cao<input type="number" id="cH"></div>
+        <div class="f">Gốc X<input type="number" id="cRX"></div>
+        <div class="f">Gốc Y<input type="number" id="cRY"></div>
+      </div>
+      <div class="small" style="margin-top:4px">Gốc = điểm giữa hai bàn chân trên mặt đất.</div>
+    </section>
+  </div>
+
+  <!-- CENTER -->
+  <div class="center">
+    <div class="tools">
+      <button id="bFlip">Hướng: phải →</button>
+      <button id="bZoomFit">Vừa khung</button>
+      <button data-z="1">1×</button><button data-z="2">2×</button><button data-z="3">3×</button><button data-z="4">4×</button>
+      <label class="chk"><input type="checkbox" id="tGrid" checked>Lưới</label>
+      <label class="chk"><input type="checkbox" id="tOnion">Bóng khung trước</label>
+      <label class="chk"><input type="checkbox" id="tAnch" checked>Chấm neo</label>
+      <label class="chk"><input type="checkbox" id="tBox">Viền mảnh</label>
+      <label class="chk"><input type="checkbox" id="tBg">Nền tối</label>
+    </div>
+    <div class="stage" id="stage"><canvas id="cv"></canvas></div>
+    <div class="row" style="justify-content:space-between">
+      <div class="status" id="status">—</div>
+      <div class="legend"><span><i style="background:#2b6cb0"></i>cạp quần</span><span><i style="background:#d69e2e"></i>gấu áo</span><span><i style="background:#38a169"></i>cổ áo</span><span><i style="background:#e53e3e"></i>cằm</span></div>
+    </div>
+    <div class="tools">
+      <button id="bPlay" class="pri">▶ Phát</button>
+      <select id="playGroup" style="width:auto"></select>
+      <div class="f" style="width:120px">FPS (0 = theo ms)<input type="number" id="fps" value="0" min="0" max="60"></div>
+      <span style="flex:1"></span>
+      <button id="fAdd">+ Khung</button>
+      <button id="fDup">Nhân bản</button>
+      <button id="fLeft">◀</button><button id="fRight">▶</button>
+      <button id="fDel" class="warn">Xóa khung</button>
+      <button id="bAutoOne">Tự căn khung này</button>
+      <button id="bAutoAll">Tự căn tất cả</button>
+    </div>
+    <div class="timeline" id="timeline"></div>
+  </div>
+
+  <!-- RIGHT -->
+  <div class="panel">
+    <section>
+      <h2>Khung đang chọn</h2>
+      <div class="g3">
+        <div class="f">Mã (nhóm-số)<input type="text" id="frId"></div>
+        <div class="f">Tên<input type="text" id="frName"></div>
+        <div class="f">ms<input type="number" id="frMs"></div>
+      </div>
+    </section>
+    <section>
+      <h2>Mảnh trong khung</h2>
+      <div id="layers"></div>
+      <div class="small">Kéo mảnh trên khung để căn · mũi tên dời 1 px (Shift: 10) · x, y = góc trên-trái của mảnh tính từ điểm gốc.</div>
+    </section>
+    <section>
+      <h2>Tự căn theo điểm neo</h2>
+      <div class="g2">
+        <div class="f">Thân đè cạp quần (px)<input type="number" id="ovHip" value="10"></div>
+        <div class="f">Cằm chồng cổ áo (px)<input type="number" id="ovNeck" value="10"></div>
+      </div>
+      <label class="chk" style="margin-top:6px;white-space:normal"><input type="checkbox" id="fitLegs">Co/giãn chân theo bề rộng gấu áo (thử nghiệm)</label>
+      <div class="f" style="margin-top:4px">Cạp rộng hơn gấu (%)<input type="number" id="fitPct" value="4"></div>
+      <div class="small" style="margin-top:6px">Chỉ căn ba lớp chân, thân, đầu. Neo đo từ ảnh: cạp = tâm mép trên mảnh chân; gấu = tâm mép dưới thân (bỏ qua bàn tay); cổ áo = tâm mép trên thân; cằm = tâm đáy đầu.</div>
+    </section>
+    <section>
+      <h2>Tải xuống</h2>
+      <div class="row">
+        <button id="xZip" class="pri">ZIP trọn bộ</button>
+        <button id="xJson">rig.json</button>
+        <button id="xPng">PNG khung này</button>
+        <button id="xSheet">Sprite sheet</button>
+        <button id="xWebm">Video WebM</button>
+        <button id="xProject">Dự án (.json)</button>
+      </div>
+      <div class="small" style="margin-top:6px">ZIP gồm parts/, frames/, sheet.png, rig.json và project.json (mở lại được bằng “Nhập ZIP / JSON”). Video ghi nhóm đang chọn ở ô Phát.</div>
+      <details style="margin-top:8px"><summary class="small">Xem rig.json</summary><pre class="json" id="jsonView"></pre>
+        <button id="xCopy">Sao chép</button></details>
+    </section>
+  </div>
+</div>
+
+<!-- SHEET DIALOG -->
+<dialog id="dlg">
+  <div class="dh"><b>Cắt tờ sprite</b><button id="sAdd" class="pri">Thêm các mảnh đã chọn</button><button id="sClose">Đóng</button></div>
+  <div class="db">
+    <div class="row">
+      <input type="file" id="fSheet" accept="image/*" style="width:auto">
+      <div class="f" style="width:110px">Màu nền<input type="text" id="sKey" value="auto"></div>
+      <div class="f" style="width:100px">Độ nhạy<input type="number" id="sTol" value="70"></div>
+      <div class="f" style="width:120px">Diện tích tối thiểu<input type="number" id="sMin" value="400"></div>
+      <div class="f" style="width:110px">Tỉ lệ (×)<input type="number" id="sScale" value="1" step="0.05"></div>
+      <div class="f" style="width:130px">hoặc: đầu cao (px)<input type="number" id="sHead" placeholder="vd 113"></div>
+      <button id="sRun">Cắt lại</button>
+    </div>
+    <div class="small" style="margin-top:6px">Hàng 1 = đầu, hàng 2 = thân, các hàng dưới = chân. Tên mặc định theo thứ tự: đứng, đi 4, chạy 4, nhảy 4. Sửa tên/loại trước khi thêm; bấm ảnh để bỏ chọn.</div>
+    <div class="pieces" id="pieces"></div>
+  </div>
+</dialog>
+
+<dialog id="dlgHelp" class="sm">
+  <div class="dh"><b>Phím tắt</b><button onclick="this.closest('dialog').close()">Đóng</button></div>
+  <div class="db"><table class="keys">
+    <tr><td>← ↑ → ↓</td><td>Dời mảnh đang chọn 1 px</td></tr>
+    <tr><td>Shift + mũi tên</td><td>Dời 10 px</td></tr>
+    <tr><td>Tab</td><td>Chọn lớp kế tiếp</td></tr>
+    <tr><td>[  ]</td><td>Khung trước / sau</td></tr>
+    <tr><td>Space</td><td>Phát / dừng</td></tr>
+    <tr><td>Ctrl + Z / Ctrl + Y</td><td>Hoàn tác / làm lại</td></tr>
+    <tr><td>Ctrl + D</td><td>Nhân bản khung</td></tr>
+    <tr><td>O</td><td>Bật/tắt bóng khung trước</td></tr>
+    <tr><td>F</td><td>Lật hướng</td></tr>
+    <tr><td>A</td><td>Tự căn khung này</td></tr>
+    <tr><td>H</td><td>Ẩn/hiện lớp đang chọn</td></tr>
+  </table>
+  <p class="small">Dự án tự lưu trong trình duyệt này. Muốn chuyển sang máy khác: Tải xuống → ZIP trọn bộ hoặc Dự án (.json), rồi Nhập ở máy kia.</p></div>
+</dialog>
+
+<dialog id="dlgAsk" class="sm">
+  <div class="dh"><b id="askTitle">Nhập</b></div>
+  <div class="db"><div id="askBody"></div><input type="text" id="askInput" style="margin-top:8px">
+    <div class="row" style="justify-content:flex-end;margin-top:12px"><button id="askNo">Hủy</button><button id="askYes" class="pri">Đồng ý</button></div></div>
+</dialog>
+<div id="toast"></div>
+
+<script>
+'use strict';
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const CORE={legs:'Chân',body:'Thân',head:'Đầu'};
+let S=null;              // current project
+let PID=null;            // current project id
+const IM={},AN={},AC={}; // image / anchors / alpha caches by lib id
+let view={z:1,flip:false,playing:false,timer:null,playIdx:-1,pick:null};
+let hist=[],redo=[];
+
+// ================= storage (IndexedDB, fallback localStorage) =================
+const DB=(()=>{let dbp=null;
+  function open(){if(dbp)return dbp;dbp=new Promise((res,rej)=>{if(!window.indexedDB)return rej('no idb');const r=indexedDB.open('xuong-ghep',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)});return dbp}
+  async function tx(mode,fn){const db=await open();return new Promise((res,rej)=>{const t=db.transaction('kv',mode);const st=t.objectStore('kv');const r=fn(st);t.oncomplete=()=>res(r&&r.result);t.onerror=()=>rej(t.error)})}
+  return {
+    async get(k){try{return await tx('readonly',s=>s.get(k))}catch(e){try{const v=localStorage.getItem('xg:'+k);return v?JSON.parse(v):undefined}catch(_){return undefined}}},
+    async set(k,v){try{await tx('readwrite',s=>s.put(v,k))}catch(e){try{localStorage.setItem('xg:'+k,JSON.stringify(v))}catch(_){toast('Không lưu được vào trình duyệt (đầy bộ nhớ?)')}}},
+    async del(k){try{await tx('readwrite',s=>s.delete(k))}catch(e){try{localStorage.removeItem('xg:'+k)}catch(_){}}}
+  }})();
+let saveT=null;
+function scheduleSave(){clearTimeout(saveT);saveT=setTimeout(saveNow,400)}
+async function saveNow(){if(!S)return;S.updated=Date.now();await DB.set('proj:'+PID,S);const idx=(await DB.get('index'))||[];const e=idx.find(p=>p.id===PID);if(e){e.name=S.name;e.updated=S.updated}else idx.push({id:PID,name:S.name,updated:S.updated});await DB.set('index',idx);await DB.set('last',PID)}
+
+// ================= model =================
+function uid(){return Math.random().toString(36).slice(2,9)}
+function emptyL(){return {img:null,x:0,y:0,s:1,vis:true}}
+function defaultFrames(layers){
+  const L=[['idle-0','Đứng 1',600],['idle-1','Đứng 2',600],['walk-0','Đi 1',160],['walk-1','Đi 2',160],['walk-2','Đi 3',160],['walk-3','Đi 4',160],
+  ['run-0','Chạy 1',110],['run-1','Chạy 2',110],['run-2','Chạy 3',110],['run-3','Chạy 4',110],['jump-0','Nhảy 1',200],['jump-1','Nhảy 2',200],['jump-2','Nhảy 3',200],['jump-3','Nhảy 4',200]];
+  return L.map(([id,name,ms])=>({id,name,ms,L:Object.fromEntries(layers.map(l=>[l.key,emptyL()]))}));
+}
+function newProject(name){const layers=[{key:'legs',label:'Chân'},{key:'head',label:'Đầu'},{key:'body',label:'Thân'}];
+  return {v:2,name:name||'Nhân vật mới',canvas:{w:480,h:480,rx:240,ry:400},layers,lib:[],frames:defaultFrames(layers),cur:0,sel:'body'}}
+function migrate(p){
+  if(p.v===2)return p;
+  // v1: order + frames[].layers{}
+  const layers=(p.order||['legs','head','body']).map(k=>({key:k,label:CORE[k]||k}));
+  return {v:2,name:p.name||'Dự án cũ',canvas:p.canvas||{w:480,h:480,rx:240,ry:400},layers,lib:p.lib||[],
+    frames:(p.frames||[]).map(f=>({id:f.id,name:f.name,ms:f.ms,L:f.layers||f.L||{}})),cur:0,sel:p.sel||'body'};
+}
+function fr(){return S.frames[S.cur]}
+function lib(id){return S.lib.find(i=>i.id===id)}
+function ensureLayers(f){for(const l of S.layers)if(!f.L[l.key])f.L[l.key]=emptyL()}
+function label(k){const l=S.layers.find(l=>l.key===k);return l?l.label:k}
+
+// ---------- history ----------
+function snap(){return JSON.stringify({c:S.canvas,l:S.layers,f:S.frames,lib:S.lib.map(i=>({id:i.id,name:i.name,kind:i.kind})),cur:S.cur,sel:S.sel})}
+const POOL={};
+function pushHist(){hist.push(snap());if(hist.length>80)hist.shift();redo=[];updUndo()}
+function restore(t){const o=JSON.parse(t);S.canvas=o.c;S.layers=o.l;S.frames=o.f;S.cur=Math.min(o.cur,S.frames.length-1);S.sel=o.sel;
+  S.lib=o.lib.map(m=>{const old=S.lib.find(i=>i.id===m.id)||POOL[m.id];return old?Object.assign(old,m):null}).filter(Boolean);}
+function undo(){if(!hist.length)return;redo.push(snap());restore(hist.pop());after()}
+function redoF(){if(!redo.length)return;hist.push(snap());restore(redo.pop());after()}
+function updUndo(){$('#bUndo').disabled=!hist.length;$('#bRedo').disabled=!redo.length}
+function change(fn){pushHist();fn();after()}
+function after(){scheduleSave();renderAll()}
+
+// ================= images & anchors =================
+async function loadImg(it){
+  if(IM[it.id])return IM[it.id];const im=new Image();im.src=it.src;await im.decode();IM[it.id]=im;it.w=im.naturalWidth;it.h=im.naturalHeight;POOL[it.id]=it;return im}
+function dropCache(id){delete IM[id];delete AN[id];delete AC[id]}
+function alphaOf(it){if(AC[it.id])return AC[it.id];const c=document.createElement('canvas');c.width=it.w;c.height=it.h;const g=c.getContext('2d');g.drawImage(IM[it.id],0,0);
+  const d=g.getImageData(0,0,it.w,it.h).data;const a=new Uint8Array(it.w*it.h);for(let i=0;i<a.length;i++)a[i]=d[i*4+3]>128?1:0;return AC[it.id]=a}
+function anchors(it){
+  if(AN[it.id])return AN[it.id];const w=it.w,h=it.h,a=alphaOf(it);
+  let top=-1,bot=-1,sx=0,n=0;for(let y=0;y<h;y++)for(let x=0;x<w;x++)if(a[y*w+x]){if(top<0)top=y;bot=y;sx+=x;n++}
+  if(top<0)return AN[it.id]={top:0,bot:h-1,cx:w/2,topC:{c:w/2,w:0},botC:{c:w/2,w:0},trunkBot:h-1,hemW:0};
+  const cx=sx/n;
+  const runAt=(y,c)=>{c=Math.round(c);if(c<0||c>=w||!a[y*w+c]){let best=null;for(let d=1;d<14;d++){for(const cc of [c-d,c+d])if(cc>=0&&cc<w&&a[y*w+cc]){best=cc;break}if(best!==null)break}if(best===null)return null;c=best}
+    let l=c,r=c;while(l>0&&a[y*w+l-1])l--;while(r<w-1&&a[y*w+r+1])r++;return [l,r]};
+  const avg=(y0,y1,st)=>{let cs=0,ws=0,k=0;for(let y=y0;st>0?y<=y1:y>=y1;y+=st){if(y<0||y>=h)continue;const r=runAt(y,cx);if(!r)continue;cs+=(r[0]+r[1])/2;ws+=r[1]-r[0];k++}return k?{c:cs/k,w:ws/k}:{c:cx,w:0}};
+  let tb=bot;for(let y=bot;y>=top;y--){if(a[y*w+Math.round(cx)]){tb=y;break}}
+  const ws=[];for(let y=tb;y>=Math.max(top,tb-Math.round((tb-top)*0.35));y--){const r=runAt(y,cx);if(r)ws.push(r[1]-r[0])}ws.sort((p,q)=>p-q);
+  return AN[it.id]={top,bot,cx,topC:avg(top+2,top+8,1),botC:avg(tb,tb-6,-1),trunkBot:tb,hemW:ws.length?ws[Math.floor(ws.length*.3)]:0};
+}
+
+// ================= geometry / align =================
+function rectOf(L){const it=L&&lib(L.img);if(!it)return null;return {it,x:L.x,y:L.y,w:it.w*L.s,h:it.h*L.s}}
+function bbox(f){let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;for(const l of S.layers){const L=f.L[l.key];if(!L||!L.vis)continue;const r=rectOf(L);if(!r)continue;x0=Math.min(x0,r.x);y0=Math.min(y0,r.y);x1=Math.max(x1,r.x+r.w);y1=Math.max(y1,r.y+r.h)}return x0>x1?null:{x0,y0,x1,y1}}
+function autoAlign(f){
+  const ovH=+$('#ovHip').value||0,ovN=+$('#ovNeck').value||0,fit=$('#fitLegs').checked,pct=(+$('#fitPct').value||0)/100;
+  const Ll=f.L.legs,Lb=f.L.body,Lh=f.L.head;const il=Ll&&lib(Ll.img),ib=Lb&&lib(Lb.img),ih=Lh&&lib(Lh.img);
+  let waist=null,neck=null;
+  if(il){const A=anchors(il);if(fit&&ib){const B=anchors(ib);const hw=B.hemW*Lb.s;if(A.topC.w>0&&hw>0)Ll.s=+((hw*(1+pct))/A.topC.w).toFixed(3)}
+    Ll.x=Math.round(-A.topC.c*Ll.s);Ll.y=Math.round(-(A.bot+1)*Ll.s);waist={x:0,y:Ll.y+A.top*Ll.s}}
+  if(ib){const B=anchors(ib);const wx=waist?waist.x:0,wy=waist?waist.y:-120;
+    Lb.x=Math.round(wx-B.botC.c*Lb.s);Lb.y=Math.round(wy+ovH-(B.trunkBot+1)*Lb.s);neck={x:Lb.x+B.topC.c*Lb.s,y:Lb.y+B.top*Lb.s}}
+  if(ih){const H=anchors(ih);const nx=neck?neck.x:0,ny=neck?neck.y:-200;Lh.x=Math.round(nx-H.botC.c*Lh.s);Lh.y=Math.round(ny+ovN-(H.trunkBot+1)*Lh.s)}
+}
+function anchorPts(f){
+  const P={};const pk=k=>{const l=f.L[k];const it=l&&lib(l.img);return it&&l.vis?{l,it,A:anchors(it)}:null};
+  const lg=pk('legs'),bd=pk('body'),hd=pk('head');
+  if(lg)P.waist={x:lg.l.x+lg.A.topC.c*lg.l.s,y:lg.l.y+lg.A.top*lg.l.s,w:lg.A.topC.w*lg.l.s};
+  if(bd){P.hem={x:bd.l.x+bd.A.botC.c*bd.l.s,y:bd.l.y+(bd.A.trunkBot+1)*bd.l.s,w:bd.A.hemW*bd.l.s};P.neck={x:bd.l.x+bd.A.topC.c*bd.l.s,y:bd.l.y+bd.A.top*bd.l.s}}
+  if(hd)P.chin={x:hd.l.x+hd.A.botC.c*hd.l.s,y:hd.l.y+(hd.A.trunkBot+1)*hd.l.s};
+  return P;
+}
+
+// ================= render =================
+const cv=$('#cv'),g=cv.getContext('2d');
+function drawFrame(ctx,f,ox,oy,sc,alpha=1,flip=false){
+  ctx.save();ctx.globalAlpha=alpha;ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
+  for(const l of S.layers){const L=f.L[l.key];if(!L||!L.vis)continue;const r=rectOf(L);if(!r)continue;const im=IM[r.it.id];if(!im)continue;
+    if(flip){ctx.save();ctx.translate(ox,oy);ctx.scale(-1,1);ctx.drawImage(im,r.x*sc,r.y*sc,r.w*sc,r.h*sc);ctx.restore()}else ctx.drawImage(im,ox+r.x*sc,oy+r.y*sc,r.w*sc,r.h*sc)}
+  ctx.restore()}
+function render(){
+  if(!S)return;const {w,h,rx,ry}=S.canvas,z=view.z;cv.width=Math.round(w*z);cv.height=Math.round(h*z);
+  const dark=$('#tBg').checked;g.fillStyle=dark?'#2b2f2d':'#fff';g.fillRect(0,0,cv.width,cv.height);
+  if($('#tGrid').checked){g.strokeStyle=dark?'#3a403d':'#eee9df';g.lineWidth=1;g.beginPath();for(let x=0;x<=w;x+=16){g.moveTo(Math.round(x*z)+.5,0);g.lineTo(Math.round(x*z)+.5,cv.height)}for(let y=0;y<=h;y+=16){g.moveTo(0,Math.round(y*z)+.5);g.lineTo(cv.width,Math.round(y*z)+.5)}g.stroke();
+    g.strokeStyle=dark?'#556059':'#d9cfbc';g.beginPath();g.moveTo(0,ry*z+.5);g.lineTo(cv.width,ry*z+.5);g.moveTo(rx*z+.5,0);g.lineTo(rx*z+.5,cv.height);g.stroke()}
+  const f=fr();if(!f)return;const shown=view.playing&&view.playIdx>=0?S.frames[view.playIdx]:f;
+  if($('#tOnion').checked&&!view.playing&&S.cur>0)drawFrame(g,S.frames[S.cur-1],rx*z,ry*z,z,.28,view.flip);
+  drawFrame(g,shown,rx*z,ry*z,z,1,view.flip);
+  if(!view.playing){
+    const box=(r,c,dash)=>{g.strokeStyle=c;g.setLineDash(dash?[4,3]:[]);const X=view.flip?rx*z-(r.x+r.w)*z:rx*z+r.x*z;g.strokeRect(Math.round(X)+.5,Math.round(ry*z+r.y*z)+.5,Math.round(r.w*z),Math.round(r.h*z));g.setLineDash([])};
+    if($('#tBox').checked)for(const l of S.layers){if(l.key===S.sel)continue;const r=rectOf(f.L[l.key]);if(r)box(r,'rgba(120,120,120,.45)')}
+    const r=rectOf(f.L[S.sel]);if(r)box(r,'rgba(47,93,79,.9)',true);
+    if($('#tAnch').checked){const P=anchorPts(f);const dot=(p,c)=>{if(!p)return;const X=view.flip?rx*z-p.x*z:rx*z+p.x*z;g.fillStyle=c;g.beginPath();g.arc(X,ry*z+p.y*z,Math.max(3,z*2.2),0,7);g.fill();g.strokeStyle='#fff';g.lineWidth=1.5;g.stroke()};
+      dot(P.waist,'#2b6cb0');dot(P.hem,'#d69e2e');dot(P.neck,'#38a169');dot(P.chin,'#e53e3e')}
+  }
+  g.fillStyle='#b4492f';g.fillRect(rx*z-5,ry*z-1,11,3);g.fillRect(rx*z-1,ry*z-5,3,11);
+  status(f);
+}
+function status(f){
+  const P=anchorPts(f),r1=v=>Math.round(v*10)/10,s=[];const L=f.L[S.sel];
+  if(L&&L.img)s.push(`<b>${esc(label(S.sel))}</b> x ${L.x}, y ${L.y}, ×${L.s}`);
+  if(P.hem&&P.waist){const dx=r1(P.hem.x-P.waist.x),ov=r1(P.hem.y-P.waist.y);s.push(`hông: lệch x <span class="${Math.abs(dx)>2?'bad':''}">${dx}</span>, áo đè cạp <span class="${ov<2?'bad':''}">${ov}</span> px`)}
+  if(P.chin&&P.neck){const dx=r1(P.chin.x-P.neck.x),ov=r1(P.chin.y-P.neck.y);s.push(`cổ: lệch x <span class="${Math.abs(dx)>2?'bad':''}">${dx}</span>, cằm chồng cổ áo <span class="${ov<2?'bad':''}">${ov}</span> px`)}
+  $('#status').innerHTML=s.join(' · ')||'Chưa có mảnh trong khung này.';
+}
+
+// ================= UI renderers =================
+function renderProjects(idx){const sel=$('#projSel');sel.innerHTML=idx.sort((a,b)=>b.updated-a.updated).map(p=>`<option value="${p.id}" ${p.id===PID?'selected':''}>${esc(p.name)}</option>`).join('')}
+function kindOptions(cur){return [...S.layers.map(l=>[l.key,l.label]),['other','Khác']].map(([k,v])=>`<option value="${esc(k)}" ${k===cur?'selected':''}>${esc(v)}</option>`).join('')}
+function renderLib(){
+  const el=$('#lib');el.innerHTML='';$('#libCount').textContent=S.lib.length?`(${S.lib.length})`:'';
+  const used=new Set();S.frames.forEach(f=>Object.values(f.L).forEach(l=>l.img&&used.add(l.img)));
+  for(const it of S.lib){const d=document.createElement('div');d.className='it'+(used.has(it.id)?' inuse':'')+(view.pick===it.id?' pick':'');d.title=it.name;
+    d.innerHTML=`<span class="k">${esc(label(it.kind)||'Khác')}</span><img src="${it.src}" alt=""><div class="n">${esc(it.name)}</div>`;
+    d.onclick=()=>{view.pick=it.id;const f=fr();const k=f.L[it.kind]?it.kind:S.sel;change(()=>{S.sel=k;const L=f.L[k];L.img=it.id;L.s=L.s||1;if(!f.placed&&CORE[k])autoAlign(f)})};
+    el.appendChild(d)}
+  const it=view.pick&&lib(view.pick);const ed=$('#libEdit');
+  if(!it){ed.innerHTML='';return}
+  ed.innerHTML=`<div class="libedit"><div class="small" style="margin-bottom:4px">Sửa mảnh · ${it.w}×${it.h} px</div>
+    <div class="g2"><div class="f">Tên<input type="text" id="leName" value="${esc(it.name)}"></div><div class="f">Loại<select id="leKind">${kindOptions(it.kind)}</select></div></div>
+    <div class="row" style="margin-top:6px"><button class="mini" id="leRep">Thay ảnh…</button><button class="mini" id="leAll">Gán cho mọi khung</button><button class="mini warn" id="leDel">Xóa mảnh</button><button class="mini" id="leClose">Đóng</button></div>
+    <input type="file" id="leFile" accept="image/*" hidden></div>`;
+  $('#leName').onchange=e=>change(()=>it.name=e.target.value.trim()||it.name);
+  $('#leKind').onchange=e=>change(()=>it.kind=e.target.value);
+  $('#leRep').onclick=()=>$('#leFile').click();
+  $('#leFile').onchange=async e=>{const fl=e.target.files[0];if(!fl)return;const src=await fileToDataURL(fl);pushHist();dropCache(it.id);it.src=src;await loadImg(it);after();toast('Đã thay ảnh')};
+  $('#leAll').onclick=()=>{if(!S.frames[0].L[it.kind]){toast('Đổi loại mảnh sang một lớp trước');return}change(()=>S.frames.forEach(f=>{f.L[it.kind].img=it.id}));toast('Đã gán cho mọi khung')};
+  $('#leDel').onclick=()=>change(()=>{S.frames.forEach(f=>Object.values(f.L).forEach(l=>{if(l.img===it.id)l.img=null}));S.lib=S.lib.filter(i=>i.id!==it.id);view.pick=null});
+  $('#leClose').onclick=()=>{view.pick=null;renderLib()};
+}
+function renderLayerDefs(){
+  const el=$('#layerDefs');el.innerHTML='';
+  S.layers.forEach((l,i)=>{const d=document.createElement('div');d.className='row';d.style.marginBottom='4px';
+    d.innerHTML=`<input type="text" value="${esc(l.label)}" style="flex:1"><span class="small" style="width:44px">${CORE[l.key]?'chuẩn':''}</span><button class="mini" title="Ra sau">↑</button><button class="mini" title="Ra trước">↓</button><button class="mini warn" title="Xóa lớp" ${S.layers.length<2?'disabled':''}>✕</button>`;
+    const [inp,,up,dn,del]=d.children;
+    inp.onchange=()=>change(()=>l.label=inp.value||l.label);
+    up.onclick=()=>{if(i===0)return;change(()=>{[S.layers[i-1],S.layers[i]]=[S.layers[i],S.layers[i-1]]})};
+    dn.onclick=()=>{if(i===S.layers.length-1)return;change(()=>{[S.layers[i+1],S.layers[i]]=[S.layers[i],S.layers[i+1]]})};
+    del.onclick=()=>ask('Xóa lớp',`Xóa lớp “${esc(l.label)}” khỏi mọi khung?`,null,()=>change(()=>{S.layers.splice(i,1);S.frames.forEach(f=>delete f.L[l.key]);if(S.sel===l.key)S.sel=S.layers[S.layers.length-1].key}));
+    el.appendChild(d)});
+}
+function renderLayers(){
+  const f=fr(),el=$('#layers');el.innerHTML='';ensureLayers(f);
+  for(const l of [...S.layers].reverse()){const k=l.key,L=f.L[k];const it=lib(L.img);
+    const d=document.createElement('div');d.className='layer'+(S.sel===k?' sel':'');
+    const opts=['<option value="">— trống —</option>'].concat(S.lib.filter(i=>i.kind===k||i.id===L.img).concat(S.lib.filter(i=>i.kind!==k&&i.id!==L.img)).map(i=>`<option value="${i.id}" ${i.id===L.img?'selected':''}>${esc(i.name)}${i.kind!==k?' ·'+esc(label(i.kind)):''}</option>`)).join('');
+    d.innerHTML=`<div class="hd"><b>${esc(l.label)}</b><label class="chk"><input type="checkbox" ${L.vis?'checked':''} data-a="vis">hiện</label></div>
+      <select data-a="img">${opts}</select>
+      <div class="g3" style="margin-top:6px"><div class="f">x<input type="number" data-a="x" value="${L.x}"></div><div class="f">y<input type="number" data-a="y" value="${L.y}"></div><div class="f">tỉ lệ<input type="number" step="0.01" data-a="s" value="${L.s}"></div></div>
+      <div class="row" style="margin-top:6px"><select data-a="copy" style="flex:1"><option value="">Chép x, y, tỉ lệ sang…</option><option value="all">mọi khung</option><option value="group">các khung cùng nhóm</option><option value="next">khung kế tiếp</option></select></div>
+      <div class="small" style="margin-top:2px">${it?`${it.w}×${it.h} px gốc`:''}</div>`;
+    d.querySelector('b').onclick=()=>{S.sel=k;renderLayers();render()};
+    d.onclick=e=>{if(e.target===d){S.sel=k;renderLayers();render()}};
+    d.querySelectorAll('[data-a]').forEach(inp=>inp.onchange=()=>{const a=inp.dataset.a;
+      if(a==='copy'){const v=inp.value;if(!v)return;const g=f.id.split('-')[0];change(()=>{S.frames.forEach((o,i)=>{if(o===f)return;const ok=v==='all'||(v==='group'&&o.id.split('-')[0]===g)||(v==='next'&&i===S.cur+1);if(ok){ensureLayers(o);Object.assign(o.L[k],{x:L.x,y:L.y,s:L.s});o.placed=true}})});toast('Đã chép toạ độ');return}
+      change(()=>{S.sel=k;if(a==='vis')L.vis=inp.checked;else if(a==='img')L.img=inp.value||null;else L[a]=+inp.value;f.placed=true})});
+    el.appendChild(d)}
+  $('#frId').value=f.id;$('#frName').value=f.name;$('#frMs').value=f.ms;
+}
+function thumb(f){const c=document.createElement('canvas');const bb=bbox(f);const TW=64,TH=92;c.width=TW;c.height=TH;const x=c.getContext('2d');
+  if(bb){const sc=Math.min(TW/(bb.x1-bb.x0+8),TH/(bb.y1-bb.y0+8));drawFrame(x,f,TW/2-((bb.x0+bb.x1)/2)*sc,TH-4-bb.y1*sc,sc)}return c}
+function renderTimeline(){
+  const el=$('#timeline');el.innerHTML='';
+  S.frames.forEach((f,i)=>{const d=document.createElement('div');d.className='fr'+(i===S.cur?' cur':'');d.appendChild(thumb(f));
+    const n=document.createElement('div');n.className='n';n.textContent=f.name;n.title=f.id;d.appendChild(n);d.onclick=()=>{S.cur=i;scheduleSave();renderAll()};el.appendChild(d)});
+  const grp=[...new Set(S.frames.map(f=>f.id.split('-')[0]))];const sel=$('#playGroup');const prev=sel.value;
+  sel.innerHTML='<option value="*">Tất cả khung</option>'+grp.map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join('');if([...sel.options].some(o=>o.value===prev))sel.value=prev;
+}
+function renderCanvasInputs(){const c=S.canvas;$('#cW').value=c.w;$('#cH').value=c.h;$('#cRX').value=c.rx;$('#cRY').value=c.ry}
+function renderAll(){if(!S)return;S.frames.forEach(ensureLayers);if(!S.layers.find(l=>l.key===S.sel))S.sel=S.layers[S.layers.length-1].key;
+  renderLib();renderLayerDefs();renderLayers();renderTimeline();renderCanvasInputs();render();updUndo();
+  const det=$('#jsonView').closest('details');if(det.open)$('#jsonView').textContent=JSON.stringify(exportRig(),null,1)}
+
+// ================= dialogs =================
+function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('show');clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove('show'),2400)}
+function ask(title,body,def,onYes){$('#askTitle').textContent=title;$('#askBody').innerHTML=body;const inp=$('#askInput');inp.style.display=def===null?'none':'block';inp.value=def||'';
+  const d=$('#dlgAsk');$('#askYes').onclick=()=>{d.close();onYes(inp.value)};$('#askNo').onclick=()=>d.close();d.showModal();if(def!==null)setTimeout(()=>inp.focus(),30)}
+
+// ================= adding images =================
+function fileToDataURL(f){return new Promise((r,j)=>{const fr=new FileReader();fr.onload=()=>r(fr.result);fr.onerror=j;fr.readAsDataURL(f)})}
+function guessKind(n){n=n.toLowerCase();if(/head|dau\b|đầu/.test(n))return 'head';if(/leg|chan\b|chân|quan\b|quần|pant/.test(n))return 'legs';if(/body|than\b|thân|torso|\bao\b|áo/.test(n))return 'body';
+  for(const l of S.layers)if(n.includes(l.key.toLowerCase())||n.includes(l.label.toLowerCase()))return l.key;return 'other'}
+async function addImages(files){pushHist();for(const f of files){const it={id:uid(),name:f.name.replace(/\.[^.]+$/,''),kind:guessKind(f.name),src:await fileToDataURL(f)};await loadImg(it);S.lib.push(it)}autoAssign();after();toast(`Đã thêm ${files.length} ảnh`)}
+function autoAssign(){
+  for(const f of S.frames){ensureLayers(f);
+    for(const l of S.layers){const k=l.key;if(f.L[k].img)continue;const list=S.lib.filter(i=>i.kind===k);if(!list.length)continue;const id=f.id.toLowerCase();
+      let m=list.find(i=>i.name.toLowerCase().includes(id));
+      if(!m){const grp=id.split('-')[0];const gl=list.filter(i=>i.name.toLowerCase().includes(grp));if(gl.length){const n=+id.split('-')[1]||0;m=gl[n%gl.length]}}
+      if(!m)m=list.find(i=>/stand|idle|dung|đứng/.test(i.name.toLowerCase()))||list[0];
+      f.L[k].img=m.id}
+    if(!f.placed)autoAlign(f)}
+}
+
+// ================= sprite sheet slicer =================
+let sheet={img:null,pieces:[]};
+function hexRgb(h){h=h.replace('#','');if(h.length===3)h=h.split('').map(c=>c+c).join('');const n=parseInt(h,16);return [n>>16&255,n>>8&255,n&255]}
+function sliceSheet(){
+  if(!sheet.img)return;const im=sheet.img,W=im.naturalWidth,H=im.naturalHeight;
+  const c=document.createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d');x.drawImage(im,0,0);const d=x.getImageData(0,0,W,H).data;
+  const key=$('#sKey').value.trim();let kc;
+  if(!key||key==='auto'){const sp=[[1,1],[W-2,1],[1,H-2],[W-2,H-2],[W>>1,1],[1,H>>1]];kc=[0,0,0];for(const [px,py] of sp){const i=(py*W+px)*4;kc[0]+=d[i]/sp.length;kc[1]+=d[i+1]/sp.length;kc[2]+=d[i+2]/sp.length}}else kc=hexRgb(key);
+  const tol=+$('#sTol').value||70,green=kc[1]>kc[0]+40&&kc[1]>kc[2]+40,N=W*H;const alpha=new Float32Array(N);
+  for(let i=0;i<N;i++){const r=d[i*4],gg=d[i*4+1],b=d[i*4+2],a=d[i*4+3];let dist=green?Math.max(0,140-(gg-Math.max(r,b))):Math.hypot(r-kc[0],gg-kc[1],b-kc[2]);
+    let al=Math.min(1,Math.max(0,(dist-tol*.5)/(tol*.6)));if(a<255)al=Math.min(al,a/255);alpha[i]=al;if(green&&al>0){const m=Math.max(r,b)+8;if(gg>m)d[i*4+1]=m}}
+  const lab=new Int32Array(N),st=new Int32Array(N);let n=0;const comps=[];
+  for(let i=0;i<N;i++){if(alpha[i]<=.5||lab[i])continue;n++;let sp=0;st[sp++]=i;lab[i]=n;let x0=W,y0=H,x1=0,y1=0,area=0;
+    while(sp){const p=st[--sp],px=p%W,py=(p/W)|0;area++;if(px<x0)x0=px;if(px>x1)x1=px;if(py<y0)y0=py;if(py>y1)y1=py;
+      if(px>0){const q=p-1;if(alpha[q]>.5&&!lab[q]){lab[q]=n;st[sp++]=q}}if(px<W-1){const q=p+1;if(alpha[q]>.5&&!lab[q]){lab[q]=n;st[sp++]=q}}
+      if(py>0){const q=p-W;if(alpha[q]>.5&&!lab[q]){lab[q]=n;st[sp++]=q}}if(py<H-1){const q=p+W;if(alpha[q]>.5&&!lab[q]){lab[q]=n;st[sp++]=q}}}
+    comps.push({n,x0,y0,x1,y1,area})}
+  const minA=+$('#sMin').value||400;let ps=comps.filter(c=>c.area>=minA&&!(c.x1-c.x0>W*.9&&c.y1-c.y0<8));
+  ps.sort((a,b)=>(a.y0+a.y1)-(b.y0+b.y1));const rows=[];
+  for(const p of ps){const cy=(p.y0+p.y1)/2;let r=rows.find(r=>Math.abs(r.cy-cy)<Math.max(20,(p.y1-p.y0)*.45));if(!r){r={cy,items:[]};rows.push(r)}r.items.push(p)}
+  rows.sort((a,b)=>a.cy-b.cy);rows.forEach(r=>r.items.sort((a,b)=>a.x0-b.x0));
+  let sc=+$('#sScale').value||1;const hh=+$('#sHead').value;if(hh&&rows[0]){const p=rows[0].items[0];sc=hh/(p.y1-p.y0+1);$('#sScale').value=sc.toFixed(3)}
+  const KR=['head','body'];const cnt={};rows.forEach((r,ri)=>{const k=KR[ri]||'legs';cnt[k]=(cnt[k]||0)+r.items.length});
+  const TPL={head:['head','head-run','head-2','head-3'],body:(cnt.body||0)>=7?['body-stand','body-walk-a','body-walk-b','body-alt','body-run-a','body-run-b','body-jump']:['body-stand','body-walk-a','body-walk-b','body-run-a','body-run-b','body-jump'],
+    legs:['legs-stand','legs-walk-0','legs-walk-1','legs-walk-2','legs-walk-3','legs-run-0','legs-run-1','legs-run-2','legs-run-3','legs-jump-0','legs-jump-1','legs-jump-2','legs-jump-3']};
+  const ctr={};sheet.pieces=[];
+  rows.forEach((r,ri)=>r.items.forEach(p=>{const pw=p.x1-p.x0+1,ph=p.y1-p.y0+1;const pc=document.createElement('canvas');pc.width=pw;pc.height=ph;const px=pc.getContext('2d');const pd=px.createImageData(pw,ph);
+    for(let yy=0;yy<ph;yy++)for(let xx=0;xx<pw;xx++){const si=(p.y0+yy)*W+p.x0+xx,di=(yy*pw+xx)*4;let keep=lab[si]===p.n;
+      if(!keep&&alpha[si]>0){for(let dy=-2;dy<=2&&!keep;dy++)for(let dx=-2;dx<=2;dx++){const q=si+dy*W+dx;if(q>=0&&q<N&&lab[q]===p.n){keep=true;break}}}
+      if(!keep)continue;pd.data[di]=d[si*4];pd.data[di+1]=d[si*4+1];pd.data[di+2]=d[si*4+2];pd.data[di+3]=Math.round(alpha[si]*255)}
+    px.putImageData(pd,0,0);let out=pc;if(Math.abs(sc-1)>.001){out=document.createElement('canvas');out.width=Math.max(1,Math.round(pw*sc));out.height=Math.max(1,Math.round(ph*sc));const o=out.getContext('2d');o.imageSmoothingQuality='high';o.drawImage(pc,0,0,out.width,out.height)}
+    const k=KR[ri]||'legs';const i=ctr[k]=(ctr[k]||0)+1;const name=(TPL[k]&&TPL[k][i-1])||`${k}-${String(i).padStart(2,'0')}`;
+    sheet.pieces.push({src:out.toDataURL('image/png'),name,kind:k,on:true,w:out.width,h:out.height})}));
+  renderPieces();toast(`Tách được ${sheet.pieces.length} mảnh`)}
+function renderPieces(){const el=$('#pieces');el.innerHTML='';sheet.pieces.forEach(p=>{const d=document.createElement('div');d.className='pc'+(p.on?'':' off');
+  d.innerHTML=`<img src="${p.src}" alt=""><input type="text" value="${esc(p.name)}" style="margin-top:4px"><select style="margin-top:4px">${kindOptions(p.kind)}</select><div class="small">${p.w}×${p.h}</div>`;
+  d.querySelector('img').onclick=()=>{p.on=!p.on;renderPieces()};d.querySelector('input').onchange=e=>p.name=e.target.value;d.querySelector('select').onchange=e=>p.kind=e.target.value;el.appendChild(d)})}
+
+// ================= export =================
+function safe(n){return String(n).replace(/[^\w\-\.]+/g,'_')}
+function libNames(){const m={},used={};for(const it of S.lib){let b=safe(it.name)||'part',n=b,k=2;while(used[n])n=b+'_'+k++;used[n]=1;m[it.id]=n}return m}
+function exportRig(){const nm=libNames();
+  return {format:'xuong-ghep-nhan-vat/2',name:S.name,canvas:{width:S.canvas.w,height:S.canvas.h},root:{x:S.canvas.rx,y:S.canvas.ry},
+    order:S.layers.map(l=>l.key),layers:S.layers,
+    note:'x,y = góc trên-trái của mảnh tính từ điểm gốc (đã nhân scale). Vẽ theo order: phần tử đầu nằm sau cùng. Lật trái: x_trái = -(x + width).',
+    frames:S.frames.map(f=>{const P=anchorPts(f);return {id:f.id,label:f.name,ms:f.ms,
+      layers:S.layers.map(l=>{const L=f.L[l.key];const it=L&&lib(L.img);return it?{part:l.key,file:`parts/${nm[it.id]}.png`,x:L.x,y:L.y,scale:L.s,width:Math.round(it.w*L.s),height:Math.round(it.h*L.s),visible:L.vis}:{part:l.key,file:null}}),
+      anchors:Object.fromEntries(Object.entries(P).map(([k,v])=>[k,Object.fromEntries(Object.entries(v).map(([a,b])=>[a,+b.toFixed(1)]))]))}})}}
+function dl(name,blob){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},2000)}
+function frameCanvas(f,flip=false){const c=document.createElement('canvas');c.width=S.canvas.w;c.height=S.canvas.h;drawFrame(c.getContext('2d'),f,S.canvas.rx,S.canvas.ry,1,1,flip);return c}
+const toBlob=(c,t='image/png')=>new Promise(r=>c.toBlob(r,t));
+const bytesOf=async b=>new Uint8Array(await b.arrayBuffer());
+function durl(u){const s=atob(u.split(',')[1]);const a=new Uint8Array(s.length);for(let i=0;i<s.length;i++)a[i]=s.charCodeAt(i);return a}
+function sheetCanvas(cell){const fs=S.frames;let W=0,H=0;
+  if(cell==='frame'){W=S.canvas.w;H=S.canvas.h}else{fs.forEach(f=>{const b=bbox(f);if(b){W=Math.max(W,b.x1-b.x0);H=Math.max(H,b.y1-b.y0)}});W=Math.ceil(W)+12;H=Math.ceil(H)+24}
+  const cols=Math.min(7,fs.length),rows=Math.ceil(fs.length/cols);const c=document.createElement('canvas');c.width=W*cols;c.height=H*rows;const x=c.getContext('2d');
+  fs.forEach((f,i)=>{const cx=(i%cols)*W,cy=Math.floor(i/cols)*H;if(cell==='frame')drawFrame(x,f,cx+S.canvas.rx,cy+S.canvas.ry,1);else drawFrame(x,f,cx+W/2,cy+H-6,1)});return c}
+const CRC=(()=>{const t=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0}return t})();
+function crc32(a){let c=0xFFFFFFFF;for(let i=0;i<a.length;i++)c=CRC[(c^a[i])&255]^(c>>>8);return (c^0xFFFFFFFF)>>>0}
+function makeZip(files){const enc=new TextEncoder(),parts=[],cen=[];let off=0;
+  for(const f of files){const nm=enc.encode(f.name),dt=f.data,crc=crc32(dt);const h=new DataView(new ArrayBuffer(30));h.setUint32(0,0x04034b50,true);h.setUint16(4,20,true);h.setUint16(6,0x0800,true);h.setUint32(14,crc,true);h.setUint32(18,dt.length,true);h.setUint32(22,dt.length,true);h.setUint16(26,nm.length,true);
+    parts.push(new Uint8Array(h.buffer),nm,dt);const c=new DataView(new ArrayBuffer(46));c.setUint32(0,0x02014b50,true);c.setUint16(4,20,true);c.setUint16(6,20,true);c.setUint16(8,0x0800,true);c.setUint32(16,crc,true);c.setUint32(20,dt.length,true);c.setUint32(24,dt.length,true);c.setUint16(28,nm.length,true);c.setUint32(42,off,true);
+    cen.push(new Uint8Array(c.buffer),nm);off+=30+nm.length+dt.length}
+  const cs=cen.reduce((s,a)=>s+a.length,0);const e=new DataView(new ArrayBuffer(22));e.setUint32(0,0x06054b50,true);e.setUint16(8,files.length,true);e.setUint16(10,files.length,true);e.setUint32(12,cs,true);e.setUint32(16,off,true);
+  return new Blob([...parts,...cen,new Uint8Array(e.buffer)],{type:'application/zip'})}
+async function exportZip(){const enc=new TextEncoder(),nm=libNames(),files=[];
+  for(const it of S.lib)files.push({name:`parts/${nm[it.id]}.png`,data:durl(it.src)});
+  for(const f of S.frames)files.push({name:`frames/${safe(f.id)}.png`,data:await bytesOf(await toBlob(frameCanvas(f)))});
+  files.push({name:'sheet.png',data:await bytesOf(await toBlob(sheetCanvas('tight')))});
+  files.push({name:'rig.json',data:enc.encode(JSON.stringify(exportRig(),null,2))});
+  files.push({name:'project.json',data:enc.encode(JSON.stringify(S))});
+  dl(`${safe(S.name)}.zip`,makeZip(files));toast('Đã tạo ZIP')}
+async function exportWebm(){
+  if(!window.MediaRecorder){toast('Trình duyệt không hỗ trợ ghi video');return}
+  const gsel=$('#playGroup').value;const idx=S.frames.map((f,i)=>i).filter(i=>gsel==='*'||S.frames[i].id.split('-')[0]===gsel);if(!idx.length)return;
+  const c=document.createElement('canvas');c.width=S.canvas.w;c.height=S.canvas.h;const x=c.getContext('2d');const stream=c.captureStream(30);
+  const mime=['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'].find(m=>MediaRecorder.isTypeSupported(m));const rec=new MediaRecorder(stream,{mimeType:mime});const chunks=[];
+  rec.ondataavailable=e=>e.data.size&&chunks.push(e.data);const done=new Promise(r=>rec.onstop=r);rec.start();toast('Đang ghi video…');
+  const fps=+$('#fps').value;for(let loop=0;loop<3;loop++)for(const i of idx){const f=S.frames[i];x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);drawFrame(x,f,S.canvas.rx,S.canvas.ry,1);await new Promise(r=>setTimeout(r,fps>0?1000/fps:f.ms))}
+  rec.stop();await done;dl(`${safe(S.name)}-${gsel==='*'?'all':gsel}.webm`,new Blob(chunks,{type:'video/webm'}));toast('Đã xuất video')}
+
+// ================= import (zip / json) =================
+async function unzip(buf){const u=new Uint8Array(buf),dv=new DataView(buf);let e=-1;for(let i=u.length-22;i>=Math.max(0,u.length-70000);i--){if(dv.getUint32(i,true)===0x06054b50){e=i;break}}if(e<0)throw new Error('ZIP hỏng');
+  const n=dv.getUint16(e+10,true);let p=dv.getUint32(e+16,true);const out={};const dec=new TextDecoder();
+  for(let k=0;k<n;k++){const meth=dv.getUint16(p+10,true),csz=dv.getUint32(p+20,true),nl=dv.getUint16(p+28,true),xl=dv.getUint16(p+30,true),cl=dv.getUint16(p+32,true),lo=dv.getUint32(p+42,true);
+    const name=dec.decode(u.subarray(p+46,p+46+nl));p+=46+nl+xl+cl;if(name.endsWith('/'))continue;
+    const lnl=dv.getUint16(lo+26,true),lxl=dv.getUint16(lo+28,true);const data=u.subarray(lo+30+lnl+lxl,lo+30+lnl+lxl+csz);
+    if(meth===0)out[name]=data.slice();else if(meth===8){const ds=new DecompressionStream('deflate-raw');out[name]=new Uint8Array(await new Response(new Blob([data]).stream().pipeThrough(ds)).arrayBuffer())}}
+  return out}
+function b2durl(bytes,name){let s='';for(let i=0;i<bytes.length;i+=0x8000)s+=String.fromCharCode.apply(null,bytes.subarray(i,i+0x8000));const ext=(name.split('.').pop()||'png').toLowerCase();return `data:image/${ext==='jpg'?'jpeg':ext};base64,`+btoa(s)}
+async function importFile(file){
+  try{
+    if(/\.json$/i.test(file.name)){const o=JSON.parse(await file.text());await importObject(o,{});return}
+    const files=await unzip(await file.arrayBuffer());const dec=new TextDecoder();
+    const pj=Object.keys(files).find(k=>/(^|\/)project\.json$/.test(k));
+    if(pj){await importObject(JSON.parse(dec.decode(files[pj])),files);return}
+    const rj=Object.keys(files).find(k=>/(^|\/)(rig|frames)\.json$/.test(k));if(!rj)throw new Error('ZIP không có rig.json / frames.json / project.json');
+    await importObject(JSON.parse(dec.decode(files[rj])),files,rj);
+  }catch(err){console.error(err);toast('Không nhập được: '+(err.message||err))}
+}
+async function importObject(o,files,rigPath){
+  // our project
+  if(o.lib&&o.frames&&(o.v||o.canvas&&o.order)){const p=migrate(o);p.name=(p.name||'Dự án')+' (nhập)';await openProject(null,p);toast('Đã mở dự án');return}
+  if(!Array.isArray(o.frames))throw new Error('Không nhận ra định dạng');
+  const base=rigPath?rigPath.replace(/[^\/]*$/,''):'';const byBase={};for(const k of Object.keys(files||{})){if(/\.(png|webp|jpe?g)$/i.test(k))byBase[k.split('/').pop()]=k}
+  const p=newProject(o.name||o.character||'Bộ nhập');
+  const cw=o.canvas&&(o.canvas.width||o.canvas.w||(Array.isArray(o.canvas)?o.canvas[0]:0)),ch=o.canvas&&(o.canvas.height||o.canvas.h||(Array.isArray(o.canvas)?o.canvas[1]:0));
+  if(cw)p.canvas.w=cw;if(ch)p.canvas.h=ch;
+  const root=o.root||{};p.canvas.rx=root.x??(Array.isArray(o.root)?o.root[0]:Math.round(p.canvas.w/2));p.canvas.ry=root.y??(Array.isArray(o.root)?o.root[1]:Math.round(p.canvas.h*0.86));
+  const order=o.order||(o.frames[0]&&o.frames[0].order)||(o.frames[0]&&o.frames[0].layers&&o.frames[0].layers.map(l=>l.part))||['legs','head','body'];
+  p.layers=order.map(k=>({key:k,label:CORE[k]||(k==='legs'?'Chân':k)}));
+  const srcMap={};S=p;
+  async function libFor(path){if(!path)return null;if(srcMap[path])return srcMap[path];const bn=path.split('/').pop();const key=files[base+path]?base+path:files[path]?path:byBase[bn];if(!key)return null;
+    const it={id:uid(),name:bn.replace(/\.[^.]+$/,''),kind:guessKind(bn),src:b2durl(files[key],bn)};await loadImg(it);p.lib.push(it);return srcMap[path]=it}
+  p.frames=[];
+  for(const f of o.frames){const nf={id:f.id||('f-'+p.frames.length),name:f.label||f.name||f.id,ms:f.ms||f.duration||150,L:{},placed:true};
+    for(const l of (f.layers||[])){const key=l.part||l.kind||l.name;if(!p.layers.find(x=>x.key===key))p.layers.push({key,label:CORE[key]||key});
+      const it=await libFor(l.file||l.src||l.image);const L=emptyL();if(it){L.img=it.id;it.kind=key;const wv=l.width??(l.w);L.s=l.scale??(wv?+(wv/it.w).toFixed(4):1)}
+      L.x=Math.round(l.x??l.dx??0);L.y=Math.round(l.y??l.dy??0);L.vis=l.visible!==false;nf.L[key]=L}
+    p.frames.push(nf)}
+  await openProject(null,p);toast(`Đã nhập ${p.frames.length} khung, ${p.lib.length} mảnh`);
+}
+
+// ================= projects =================
+async function openProject(id,obj){
+  if(obj){PID=uid();S=obj}else{const p=await DB.get('proj:'+id);if(!p){toast('Không mở được dự án');return}PID=id;S=migrate(p)}
+  for(const k in IM)delete IM[k];for(const k in AN)delete AN[k];for(const k in AC)delete AC[k];
+  for(const it of S.lib){try{await loadImg(it)}catch(e){}}
+  hist=[];redo=[];view.pick=null;S.cur=Math.min(S.cur||0,S.frames.length-1);await saveNow();renderProjects((await DB.get('index'))||[]);renderAll();fitZoom();
+}
+
+// ================= play =================
+function togglePlay(){
+  if(view.playing){view.playing=false;clearTimeout(view.timer);view.playIdx=-1;$('#bPlay').textContent='▶ Phát';render();return}
+  const gsel=$('#playGroup').value;const idx=S.frames.map((f,i)=>i).filter(i=>gsel==='*'||S.frames[i].id.split('-')[0]===gsel);if(!idx.length)return;
+  view.playing=true;$('#bPlay').textContent='■ Dừng';let k=0;
+  const step=()=>{if(!view.playing)return;view.playIdx=idx[k%idx.length];render();const f=S.frames[view.playIdx];const fps=+$('#fps').value;k++;view.timer=setTimeout(step,fps>0?1000/fps:f.ms)};step();
+}
+function fitZoom(){const st=$('#stage');const z=Math.min((st.clientWidth-40)/S.canvas.w,(st.clientHeight-40)/S.canvas.h);view.z=Math.max(.5,Math.min(4,Math.floor(z*4)/4||1));render()}
+
+// ================= events =================
+function canvasPt(e){const r=cv.getBoundingClientRect();const px=(e.clientX-r.left)*(cv.width/r.width)/view.z,py=(e.clientY-r.top)*(cv.height/r.height)/view.z;let x=px-S.canvas.rx;if(view.flip)x=-x;return {x,y:py-S.canvas.ry}}
+function hit(f,p){for(const l of [...S.layers].reverse()){const L=f.L[l.key];if(!L||!L.vis)continue;const r=rectOf(L);if(!r)continue;
+  if(p.x>=r.x&&p.x<r.x+r.w&&p.y>=r.y&&p.y<r.y+r.h){const ix=Math.floor((p.x-r.x)/L.s),iy=Math.floor((p.y-r.y)/L.s);if(alphaOf(r.it)[iy*r.it.w+ix])return l.key}}return null}
+function bind(){
+  $('#drop').onclick=()=>$('#fImg').click();$('#fImg').onchange=e=>{const f=[...e.target.files];if(f.length)addImages(f);e.target.value=''};
+  const dz=$('#drop');['dragenter','dragover'].forEach(t=>dz.addEventListener(t,e=>{e.preventDefault();dz.classList.add('hot')}));['dragleave','drop'].forEach(t=>dz.addEventListener(t,e=>{e.preventDefault();dz.classList.remove('hot')}));
+  dz.addEventListener('drop',e=>{const f=[...e.dataTransfer.files].filter(f=>f.type.startsWith('image/'));if(f.length)addImages(f)});
+  document.addEventListener('dragover',e=>e.preventDefault());document.addEventListener('drop',e=>{if(e.target.closest('#drop'))return;e.preventDefault();const f=[...e.dataTransfer.files];const z=f.find(x=>/\.(zip|json)$/i.test(x.name));if(z)importFile(z);else{const im=f.filter(x=>x.type.startsWith('image/'));if(im.length)addImages(im)}});
+  $('#bSheet').onclick=()=>$('#dlg').showModal();$('#sClose').onclick=()=>$('#dlg').close();
+  $('#fSheet').onchange=async e=>{const f=e.target.files[0];if(!f)return;const im=new Image();im.src=await fileToDataURL(f);await im.decode();sheet.img=im;sliceSheet()};
+  $('#sRun').onclick=sliceSheet;
+  $('#sAdd').onclick=async()=>{const sel=sheet.pieces.filter(p=>p.on);if(!sel.length)return;pushHist();for(const p of sel){const it={id:uid(),name:p.name,kind:p.kind,src:p.src};await loadImg(it);S.lib.push(it)}autoAssign();$('#dlg').close();after();toast(`Đã thêm ${sel.length} mảnh`)};
+  ['cW','cH','cRX','cRY'].forEach(id=>$('#'+id).onchange=()=>change(()=>{S.canvas={w:+$('#cW').value||480,h:+$('#cH').value||480,rx:+$('#cRX').value,ry:+$('#cRY').value}}));
+  $('#bAddLayer').onclick=()=>{const name=$('#newLayer').value.trim();if(!name)return;let key=safe(name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/đ/g,'d').replace(/\s+/g,'-'))||'layer';while(S.layers.find(l=>l.key===key))key+='_2';change(()=>{S.layers.push({key,label:name});S.sel=key});$('#newLayer').value=''};
+  $('#frId').onchange=e=>change(()=>fr().id=e.target.value.trim()||fr().id);$('#frName').onchange=e=>change(()=>fr().name=e.target.value);$('#frMs').onchange=e=>change(()=>fr().ms=+e.target.value||100);
+  document.querySelectorAll('[data-z]').forEach(b=>b.onclick=()=>{view.z=+b.dataset.z;render()});$('#bZoomFit').onclick=fitZoom;
+  $('#bFlip').onclick=()=>{view.flip=!view.flip;$('#bFlip').textContent=view.flip?'Hướng: ← trái':'Hướng: phải →';render()};
+  ['tGrid','tOnion','tAnch','tBox','tBg'].forEach(id=>$('#'+id).onchange=render);
+  $('#fAdd').onclick=()=>change(()=>{const f={id:'frame-'+(S.frames.length),name:'Khung mới',ms:150,L:{}};ensureLayers(f);S.frames.splice(S.cur+1,0,f);S.cur++});
+  $('#fDup').onclick=dupFrame;
+  $('#fDel').onclick=()=>{if(S.frames.length<2)return;change(()=>{S.frames.splice(S.cur,1);S.cur=Math.max(0,S.cur-1)})};
+  $('#fLeft').onclick=()=>{if(S.cur<1)return;change(()=>{const f=S.frames;[f[S.cur-1],f[S.cur]]=[f[S.cur],f[S.cur-1]];S.cur--})};
+  $('#fRight').onclick=()=>{const f=S.frames;if(S.cur>=f.length-1)return;change(()=>{[f[S.cur+1],f[S.cur]]=[f[S.cur],f[S.cur+1]];S.cur++})};
+  $('#bAutoOne').onclick=()=>{change(()=>{autoAlign(fr());fr().placed=false});toast('Đã tự căn khung này')};
+  $('#bAutoAll').onclick=()=>{change(()=>S.frames.forEach(f=>{autoAlign(f);f.placed=false}));toast('Đã tự căn tất cả')};
+  $('#bPlay').onclick=togglePlay;
+  $('#bLibClean').onclick=()=>{const used=new Set();S.frames.forEach(f=>Object.values(f.L).forEach(l=>l.img&&used.add(l.img)));const n=S.lib.filter(i=>!used.has(i.id)).length;if(!n){toast('Không có mảnh thừa');return}
+    ask('Dọn thư viện',`Xóa ${n} mảnh không được dùng ở khung nào?`,null,()=>change(()=>{S.lib=S.lib.filter(i=>used.has(i.id));view.pick=null}))};
+  // drag
+  let drag=null;
+  cv.addEventListener('pointerdown',e=>{if(view.playing)return;const p=canvasPt(e);const f=fr();const h=hit(f,p);if(h)S.sel=h;const L=f.L[S.sel];if(!L||!L.img){renderLayers();render();return}
+    drag={sx:p.x,sy:p.y,x:L.x,y:L.y,moved:false};cv.setPointerCapture(e.pointerId);cv.style.cursor='grabbing';renderLayers();render()});
+  cv.addEventListener('pointermove',e=>{if(!drag)return;const p=canvasPt(e);const L=fr().L[S.sel];const nx=Math.round(drag.x+(p.x-drag.sx)),ny=Math.round(drag.y+(p.y-drag.sy));if(!drag.moved&&(nx!==L.x||ny!==L.y)){pushHist();drag.moved=true}L.x=nx;L.y=ny;render()});
+  cv.addEventListener('pointerup',()=>{if(!drag)return;const m=drag.moved;drag=null;cv.style.cursor='grab';if(m){fr().placed=true;after()}});
+  window.addEventListener('keydown',e=>{
+    const tag=document.activeElement&&document.activeElement.tagName;const typing=/INPUT|SELECT|TEXTAREA/.test(tag);
+    if((e.ctrlKey||e.metaKey)&&!typing){const k=e.key.toLowerCase();if(k==='z'&&!e.shiftKey){e.preventDefault();undo();return}if(k==='y'||(k==='z'&&e.shiftKey)){e.preventDefault();redoF();return}if(k==='d'){e.preventDefault();dupFrame();return}}
+    if(typing||document.querySelector('dialog[open]'))return;const f=fr();const L=f&&f.L[S.sel];const st=e.shiftKey?10:1;
+    const m={ArrowLeft:[-st,0],ArrowRight:[st,0],ArrowUp:[0,-st],ArrowDown:[0,st]}[e.key];
+    if(m&&L&&L.img){e.preventDefault();change(()=>{L.x+=view.flip?-m[0]:m[0];L.y+=m[1];f.placed=true});return}
+    if(e.key===' '){e.preventDefault();togglePlay()}else if(e.key==='['){S.cur=Math.max(0,S.cur-1);renderAll()}else if(e.key===']'){S.cur=Math.min(S.frames.length-1,S.cur+1);renderAll()}
+    else if(e.key==='Tab'){e.preventDefault();const i=S.layers.findIndex(l=>l.key===S.sel);S.sel=S.layers[(i+(e.shiftKey?S.layers.length-1:1))%S.layers.length].key;renderLayers();render()}
+    else if(e.key==='o'||e.key==='O'){$('#tOnion').checked=!$('#tOnion').checked;render()}else if(e.key==='f'||e.key==='F')$('#bFlip').click();
+    else if(e.key==='a'||e.key==='A')$('#bAutoOne').click();else if((e.key==='h'||e.key==='H')&&L)change(()=>L.vis=!L.vis)});
+  // export
+  $('#xJson').onclick=()=>dl('rig.json',new Blob([JSON.stringify(exportRig(),null,2)],{type:'application/json'}));
+  $('#xPng').onclick=async()=>dl(`${safe(fr().id)}.png`,await toBlob(frameCanvas(fr(),view.flip)));
+  $('#xSheet').onclick=async()=>dl(`${safe(S.name)}-sheet.png`,await toBlob(sheetCanvas('frame')));
+  $('#xZip').onclick=exportZip;$('#xWebm').onclick=exportWebm;
+  $('#xProject').onclick=()=>dl(`${safe(S.name)}.project.json`,new Blob([JSON.stringify(S)],{type:'application/json'}));
+  $('#xCopy').onclick=async()=>{try{await navigator.clipboard.writeText(JSON.stringify(exportRig(),null,2));toast('Đã sao chép')}catch(e){toast('Trình duyệt chặn sao chép')}};
+  $('#jsonView').closest('details').addEventListener('toggle',e=>{if(e.target.open)$('#jsonView').textContent=JSON.stringify(exportRig(),null,1)});
+  // projects
+  $('#projSel').onchange=e=>openProject(e.target.value);
+  $('#bProjNew').onclick=()=>ask('Dự án mới','Tên nhân vật / bộ trang phục:','Nhân vật mới',v=>openProject(null,newProject(v.trim()||'Nhân vật mới')));
+  $('#bProjRename').onclick=()=>ask('Đổi tên dự án','Tên mới:',S.name,async v=>{S.name=v.trim()||S.name;await saveNow();renderProjects((await DB.get('index'))||[])});
+  $('#bProjDel').onclick=()=>ask('Xóa dự án',`Xóa hẳn dự án “${esc(S.name)}” khỏi trình duyệt này? Không hoàn tác được.`,null,async()=>{const id=PID;await DB.del('proj:'+id);let idx=((await DB.get('index'))||[]).filter(p=>p.id!==id);await DB.set('index',idx);
+    if(idx.length)await openProject(idx[0].id);else await openProject(null,newProject())});
+  $('#bImport').onclick=()=>$('#fImport').click();$('#fImport').onchange=e=>{const f=e.target.files[0];if(f)importFile(f);e.target.value=''};
+  $('#bUndo').onclick=undo;$('#bRedo').onclick=redoF;$('#bHelp').onclick=()=>$('#dlgHelp').showModal();
+  window.addEventListener('resize',()=>{clearTimeout(window._rz);window._rz=setTimeout(render,150)});
+}
+function dupFrame(){change(()=>{const c=JSON.parse(JSON.stringify(fr()));const m=c.id.match(/^(.*?)-(\d+)$/);c.id=m?`${m[1]}-${+m[2]+1}`:c.id+'-b';c.name=c.name+' (bản sao)';S.frames.splice(S.cur+1,0,c);S.cur++})}
+
+(async function init(){
+  bind();
+  let idx=(await DB.get('index'))||[];
+  // migrate old single-project storage
+  try{const old=localStorage.getItem('xuong-ghep-v1');if(old&&!idx.length){await openProject(null,migrate(JSON.parse(old)));localStorage.removeItem('xuong-ghep-v1');return}}catch(e){}
+  const last=await DB.get('last');
+  if(idx.length)await openProject(idx.find(p=>p.id===last)?last:idx[0].id);else await openProject(null,newProject());
+})();
+</script>
+</body>
+</html>
