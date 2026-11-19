@@ -314,6 +314,7 @@ table.ftab input[type=number]{width:70px}
         <div class="f">Mã (nhóm-số)<input type="text" id="frId"></div>
         <div class="f">Tên<input type="text" id="frName"></div>
         <div class="f">ms<input type="number" id="frMs"></div>
+        <div class="f" title="Dời thân (kèm đầu) sang ngang riêng khung này, giữ nguyên khi Tự căn. Dùng khi thân nghiêng hoặc tay, đai làm lệch điểm neo gấu áo.">Thân dời ngang (px)<input type="number" id="frBdx"></div>
       </div>
     </section>
     <section>
@@ -497,13 +498,13 @@ function autoAlign(f){
   let waist=null,neck=null;
   if(il){const A=anchors(il);if(fit){const ls=legScale(pct);if(ls)Ll.s=ls}
     Ll.x=Math.round(-A.topC.c*Ll.s);Ll.y=Math.round(-(A.bot+1)*Ll.s);waist={x:0,y:Ll.y+A.top*Ll.s}}
-  // NSO bob: in "run" the whole sprite bounces; elsewhere the body rises on the legs, so the hem must still cover the waistband at its highest
-  const grp=groupOf(f),bounce=grp==='run',hh0=ih?(anchors(ih).trunkBot-anchors(ih).top+1)*(Lh?Lh.s:1):120,U=hh0/16;
+  // NSO Char.java keeps cy fixed while running: feet stay on the ground, only body and head rise (Class127 body/head tops), so the hem must still cover the waistband at its highest
+  const grp=groupOf(f),bounce=false,hh0=ih?(anchors(ih).trunkBot-anchors(ih).top+1)*(Lh?Lh.s:1):120,U=hh0/16;
   const maxB=bounce?0:Math.max(0,...S.frames.filter(o=>groupOf(o)===grp).map(o=>(o.bob&&+o.bob.b)||0));
   let ovHip=ovH;if(il&&O.hipAuto){const ld=lidDepth(il)*Ll.s;if(ld)ovHip=Math.max(ovH,Math.round(ld+2))}
   ovHip+=Math.round(maxB*U);
   if(ib){const B=anchors(ib);const wx=waist?waist.x:0,wy=waist?waist.y:-120;
-    Lb.x=Math.round(wx-B.botC.c*Lb.s);Lb.y=Math.round(wy+ovHip-(B.trunkBot+1)*Lb.s);neck={x:Lb.x+B.neckC*Lb.s,y:Lb.y+B.neckY*Lb.s}}
+    Lb.x=Math.round(wx-B.botC.c*Lb.s+(+f.bdx||0));Lb.y=Math.round(wy+ovHip-(B.trunkBot+1)*Lb.s);neck={x:Lb.x+B.neckC*Lb.s,y:Lb.y+B.neckY*Lb.s}}
   if(ih){const H=anchors(ih);const nx=neck?neck.x:0,ny=neck?neck.y:-200;const on=O.neckAuto?Math.round((H.trunkBot-H.top+1)*Lh.s*(+O.neckPct||0)/100):ovN;
     Lh.x=Math.round(nx-H.botC.c*Lh.s+(+O.headDx||0));Lh.y=Math.round(ny+on-(H.trunkBot+1)*Lh.s)}
   // NSO-style bob, in NSO pixels (1 px = 1/16 of head height): body up b, head up b+h
@@ -550,7 +551,7 @@ function render(){
 function status(f){
   const P=anchorPts(f),r1=v=>Math.round(v*10)/10,s=[];const L=f.L[S.sel];
   if(L&&L.img)s.push(`<b>${esc(label(S.sel))}</b> x ${L.x}, y ${L.y}, ×${L.s}`);
-  if(P.hem&&P.waist){const dx=r1(P.hem.x-P.waist.x),ov=r1(P.hem.y-P.waist.y);s.push(`hông: lệch x <span class="${Math.abs(dx)>2?'bad':''}">${dx}</span>, áo đè cạp <span class="${ov<2?'bad':''}">${ov}</span> px`)}
+  if(P.hem&&P.waist){const dx=r1(P.hem.x-P.waist.x-(+f.bdx||0)),ov=r1(P.hem.y-P.waist.y);s.push(`hông: lệch x <span class="${Math.abs(dx)>2?'bad':''}">${dx}</span>, áo đè cạp <span class="${ov<2?'bad':''}">${ov}</span> px`)}
   if(P.chin&&P.neck){const dx=r1(P.chin.x-P.neck.x-((S.opts&&+S.opts.headDx)||0)),ov=r1(P.chin.y-P.neck.y);s.push(`cổ: lệch x <span class="${Math.abs(dx)>2?'bad':''}">${dx}</span>, cằm chồng cổ áo <span class="${ov<2?'bad':''}">${ov}</span> px`)}
   $('#status').innerHTML=s.join(' · ')||'Chưa có mảnh trong khung này.';
 }
@@ -606,7 +607,7 @@ function renderLayers(){
       if(a==='copy'){const v=inp.value;if(!v)return;const g=f.id.split('-')[0];change(()=>{S.frames.forEach((o,i)=>{if(o===f)return;const ok=v==='all'||(v==='group'&&o.id.split('-')[0]===g)||(v==='next'&&i===S.cur+1);if(ok){ensureLayers(o);Object.assign(o.L[k],{x:L.x,y:L.y,s:L.s});o.placed=true}})});toast('Đã chép toạ độ');return}
       change(()=>{S.sel=k;if(a==='vis')L.vis=inp.checked;else if(a==='img')L.img=inp.value||null;else L[a]=+inp.value;f.placed=true})});
     el.appendChild(d)}
-  $('#frId').value=f.id;$('#frName').value=f.name;$('#frMs').value=f.ms;
+  $('#frId').value=f.id;$('#frName').value=f.name;$('#frMs').value=f.ms;$('#frBdx').value=f.bdx||0;
 }
 function thumb(f){const c=document.createElement('canvas');const bb=bbox(f);const TW=64,TH=92;c.width=TW;c.height=TH;const x=c.getContext('2d');
   if(bb){const sc=Math.min(TW/(bb.x1-bb.x0+8),TH/(bb.y1-bb.y0+8));drawFrame(x,f,TW/2-((bb.x0+bb.x1)/2)*sc,TH-4-bb.y1*sc,sc)}return c}
@@ -827,7 +828,7 @@ function usedCount(){const m={};S.frames.forEach(f=>Object.values(f.L).forEach(l
 function checkFrame(f){
   const P=anchorPts(f),w=[];let hip=null,neck=null;const r1=v=>Math.round(v*10)/10;
   for(const k of ['legs','body','head']){if(S.layers.find(l=>l.key===k)&&!(f.L[k]&&f.L[k].img))w.push('thiếu '+label(k).toLowerCase())}
-  if(P.hem&&P.waist){hip={dx:r1(P.hem.x-P.waist.x),ov:r1(P.hem.y-P.waist.y)};if(Math.abs(hip.dx)>3)w.push('hông lệch ngang');if(hip.ov<2)w.push('áo không đè cạp');if(hip.ov>40)w.push('áo đè quá sâu')}
+  if(P.hem&&P.waist){hip={dx:r1(P.hem.x-P.waist.x-(+f.bdx||0)),ov:r1(P.hem.y-P.waist.y)};if(Math.abs(hip.dx)>3)w.push('hông lệch ngang');if(hip.ov<2)w.push('áo không đè cạp');if(hip.ov>40)w.push('áo đè quá sâu')}
   if(P.chin&&P.neck){neck={dx:r1(P.chin.x-P.neck.x-((S.opts&&+S.opts.headDx)||0)),ov:r1(P.chin.y-P.neck.y)};if(Math.abs(neck.dx)>4)w.push('đầu lệch ngang');if(neck.ov<0)w.push('hở cổ');if(neck.ov>24)w.push('đầu lún sâu')}
   return {hip,neck,w}}
 function renderProjCards(idx){const el=$('#dProjs');if(!el)return;idx=[...idx].sort((a,b)=>b.updated-a.updated);
@@ -989,7 +990,7 @@ function bind(){
   $('#sAdd').onclick=async()=>{const sel=sheet.pieces.filter(p=>p.on);if(!sel.length)return;pushHist();for(const p of sel){const it={id:uid(),name:p.name,kind:p.kind,src:p.src};await loadImg(it);S.lib.push(it)}autoAssign();$('#dlg').close();after();toast(`Đã thêm ${sel.length} mảnh`)};
   ['cW','cH','cRX','cRY'].forEach(id=>$('#'+id).onchange=()=>change(()=>{S.canvas={w:+$('#cW').value||480,h:+$('#cH').value||480,rx:+$('#cRX').value,ry:+$('#cRY').value}}));
   $('#bAddLayer').onclick=()=>{const name=$('#newLayer').value.trim();if(!name)return;let key=safe(name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/đ/g,'d').replace(/\s+/g,'-'))||'layer';while(S.layers.find(l=>l.key===key))key+='_2';change(()=>{S.layers.push({key,label:name});S.sel=key});$('#newLayer').value=''};
-  $('#frId').onchange=e=>change(()=>fr().id=e.target.value.trim()||fr().id);$('#frName').onchange=e=>change(()=>fr().name=e.target.value);$('#frMs').onchange=e=>change(()=>fr().ms=+e.target.value||100);
+  $('#frId').onchange=e=>change(()=>fr().id=e.target.value.trim()||fr().id);$('#frName').onchange=e=>change(()=>fr().name=e.target.value);$('#frMs').onchange=e=>change(()=>fr().ms=+e.target.value||100);$('#frBdx').onchange=e=>change(()=>{const f=fr();f.bdx=Math.round(+e.target.value||0);autoAlign(f);f.placed=false});
   document.querySelectorAll('[data-z]').forEach(b=>b.onclick=()=>{view.z=+b.dataset.z;render()});$('#bZoomFit').onclick=fitZoom;
   $('#bFlip').onclick=()=>{view.flip=!view.flip;$('#bFlip').textContent=view.flip?'Hướng: ← trái':'Hướng: phải →';render()};
   ['tGrid','tOnion','tAnch','tBox','tBg'].forEach(id=>$('#'+id).onchange=render);
