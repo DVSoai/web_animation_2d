@@ -182,7 +182,7 @@ table.ftab input[type=number]{width:70px}
         <button class="pri" id="dSheet">Cắt tờ sprite nền xanh…</button>
         <button id="dAddImg">Thêm ảnh mảnh…</button>
         <button id="dAutoAll">Tự căn tất cả khung</button>
-        <button id="dNso" title="Theo Char.java NSO. Đứng: thở 240/200 ms, khung 2 nâng thân và đầu 1 px. Chạy: 5 khung × 80 ms, thân nhún 1 px ở khung 4, đầu trễ 1 px ở khung 2. NSO không có dáng đi riêng: đi dùng nhịp chạy, 140 ms.">Áp nhịp chuyển động NSO</button>
+        <button id="dNso" title="Theo Char.java NSO. Đứng: thở 240/200 ms, khung 2 nâng thân và đầu 1 px. Chạy: 5 khung × 80 ms, thân nhún 1 px ở khung 4, đầu thấp 1 px ở khung 2 và cao 1 px ở khung 3 (đỉnh đầu NSO 33, 32, 34, 34, 33). NSO không có dáng đi riêng: đi dùng nhịp chạy, 140 ms.">Áp nhịp chuyển động NSO</button>
         <button id="dEdit">Mở trình ghép khung</button>
       </div>
       <div class="ch" style="margin:14px 0 8px"><h3>Xuất</h3></div>
@@ -205,6 +205,7 @@ table.ftab input[type=number]{width:70px}
         </div>
         <label class="chk" style="white-space:normal"><input type="checkbox" id="oFit">Thu mọi mảnh chân cùng một tỉ lệ để cạp quần chỉ rộng <input type="number" id="oFitPct" style="width:56px">% gấu áo (NSO: 13/15 ≈ 87%), áo phủ ra ngoài quần</label>
         <label class="chk" style="white-space:normal"><input type="checkbox" id="oNsoOrder">Thứ tự lớp theo NSO (Char.java): khung <b>đứng</b> vẽ chân → thân → đầu (đầu trên cùng); khung <b>đi, chạy, nhảy</b> vẽ chân → đầu → thân (thân đè cằm)</label>
+        <label class="chk" style="white-space:normal"><input type="checkbox" id="oNsoLegs">Khung chạy: treo chân theo cạp quần như NSO (cạp cùng độ cao với khung đứng; dáng bay thì bàn chân nhấc khỏi đất)</label>
         <label class="chk" style="white-space:normal"><input type="checkbox" id="oHipAuto">Tự đè gấu áo xuống hết “nắp” cạp quần nếu mảnh chân có vẽ (NSO: đỉnh quần luôn nằm khuất dưới áo)</label>
         <label class="chk" style="white-space:normal"><input type="checkbox" id="oNeckAuto">Tự tính độ chồng cằm như NSO: <input type="number" id="oNeckPct" style="width:56px">% chiều cao đầu (NSO nhìn nghiêng: đầu đặt ngay trên thân, 0–2%; lún sâu hơn sẽ trông gù)</label>
         <label class="chk" style="white-space:normal"><input type="checkbox" id="oDark">Khi cắt tờ sprite: tô tối phần da cổ trong cổ áo (thường để TẮT: NSO giữ cổ màu da ngay dưới quai hàm để giấu đường nối)</label>
@@ -426,10 +427,10 @@ function defaultFrames(layers){
   const L=[['idle-0','Đứng 1',600],['idle-1','Đứng 2',600],['run-0','Chạy 1',80],['run-1','Chạy 2',80],['run-2','Chạy 3',80],['run-3','Chạy 4',80],['run-4','Chạy 5',80],['jump-0','Nhảy 1',200],['jump-1','Nhảy 2',200],['jump-2','Nhảy 3',200],['jump-3','Nhảy 4',200]];
   return L.map(([id,name,ms])=>({id,name,ms,L:Object.fromEntries(layers.map(l=>[l.key,emptyL()]))}));
 }
-function defOpts(mode){return {hipAuto:true,neckMode:mode||'headTop',neckAuto:mode!=='bodyTop',neckPct:2,ovNeck:mode==='bodyTop'?10:12,ovHip:8,darkNeck:false,defringe:true,fitLegs:true,fitPct:88,nsoOrder:true}}
+function defOpts(mode){return {hipAuto:true,neckMode:mode||'headTop',neckAuto:mode!=='bodyTop',neckPct:2,ovNeck:mode==='bodyTop'?10:12,ovHip:8,darkNeck:false,defringe:true,fitLegs:true,fitPct:88,nsoOrder:true,nsoLegs:true}}
 function newProject(name){const layers=[{key:'legs',label:'Chân'},{key:'body',label:'Thân'},{key:'head',label:'Đầu'}];
   return {v:2,name:name||'Nhân vật mới',canvas:{w:480,h:480,rx:240,ry:400},layers,lib:[],frames:defaultFrames(layers),cur:0,sel:'body',opts:defOpts('headTop')}}
-function withOpts(p){if(p.opts&&p.opts.neckPct===12&&!p.opts.neckPctSet)p.opts.neckPct=2;if(p.opts&&p.opts.fitPct===4){p.opts.fitPct=88;p.opts.fitLegs=true}if(p.opts&&p.opts.hipAuto===undefined)p.opts.hipAuto=true;if(p.opts&&p.opts.nsoOrder===undefined)p.opts.nsoOrder=true;if(p.opts&&p.opts.neckPct===undefined){p.opts.neckPct=2;p.opts.neckAuto=p.opts.neckMode!=='bodyTop'}if(!p.opts){const hi=p.layers.findIndex(l=>l.key==='head'),bi=p.layers.findIndex(l=>l.key==='body');p.opts=defOpts(hi>bi&&bi>=0?'headTop':'bodyTop')}return p}
+function withOpts(p){if(p.opts&&p.opts.neckPct===12&&!p.opts.neckPctSet)p.opts.neckPct=2;if(p.opts&&p.opts.fitPct===4){p.opts.fitPct=88;p.opts.fitLegs=true}if(p.opts&&p.opts.hipAuto===undefined)p.opts.hipAuto=true;if(p.opts&&p.opts.nsoOrder===undefined)p.opts.nsoOrder=true;if(p.opts&&p.opts.nsoLegs===undefined)p.opts.nsoLegs=true;if(p.opts&&p.opts.neckPct===undefined){p.opts.neckPct=2;p.opts.neckAuto=p.opts.neckMode!=='bodyTop'}if(!p.opts){const hi=p.layers.findIndex(l=>l.key==='head'),bi=p.layers.findIndex(l=>l.key==='body');p.opts=defOpts(hi>bi&&bi>=0?'headTop':'bodyTop')}return p}
 function migrate(p){
   if(p.v===2)return withOpts(p);
   // v1: order + frames[].layers{}
@@ -495,11 +496,15 @@ function legScale(pct){const med=a=>{a=a.filter(v=>v>0).sort((x,y)=>x-y);return 
 function autoAlign(f){
   const O=S.opts||defOpts(),ovH=+O.ovHip||0,ovN=+O.ovNeck||0,fit=!!O.fitLegs,pct=(+O.fitPct||88)/100;
   const Ll=f.L.legs,Lb=f.L.body,Lh=f.L.head;const il=Ll&&lib(Ll.img),ib=Lb&&lib(Lb.img),ih=Lh&&lib(Lh.img);
-  let waist=null,neck=null;
+  let waist=null,neck=null;const grp=groupOf(f);
+  // NSO Char.java Class127 places every part by its top: in run the legs piece hangs from the waistband, so in a flight pose the feet leave the ground
+  const refF=O.nsoLegs!==false&&grp==='run'?S.frames.find(o=>groupOf(o)==='idle'&&o.L.legs&&o.L.legs.img&&lib(o.L.legs.img)):null;
   if(il){const A=anchors(il);if(fit){const ls=legScale(pct);if(ls)Ll.s=ls}
-    Ll.x=Math.round(-A.topC.c*Ll.s);Ll.y=Math.round(-(A.bot+1)*Ll.s);waist={x:0,y:Ll.y+A.top*Ll.s}}
-  // NSO Char.java keeps cy fixed while running: feet stay on the ground, only body and head rise (Class127 body/head tops), so the hem must still cover the waistband at its highest
-  const grp=groupOf(f),bounce=false,hh0=ih?(anchors(ih).trunkBot-anchors(ih).top+1)*(Lh?Lh.s:1):120,U=hh0/16;
+    Ll.x=Math.round(-A.topC.c*Ll.s);Ll.y=Math.round(-(A.bot+1)*Ll.s);
+    if(refF){const rl=refF.L.legs,rA=anchors(lib(rl.img)),rs=fit?Ll.s:rl.s;const wy=-(rA.bot+1)*rs+rA.top*rs;Ll.y=Math.round(wy-A.top*Ll.s)}
+    waist={x:0,y:Ll.y+A.top*Ll.s}}
+  // cy stays fixed while running (no whole-sprite bounce); body and head rise per Class127, so the hem must still cover the waistband at its highest
+  const bounce=false,hh0=ih?(anchors(ih).trunkBot-anchors(ih).top+1)*(Lh?Lh.s:1):120,U=hh0/16;
   const maxB=bounce?0:Math.max(0,...S.frames.filter(o=>groupOf(o)===grp).map(o=>(o.bob&&+o.bob.b)||0));
   let ovHip=ovH;if(il&&O.hipAuto){const ld=lidDepth(il)*Ll.s;if(ld)ovHip=Math.max(ovH,Math.round(ld+2))}
   ovHip+=Math.round(maxB*U);
@@ -508,7 +513,7 @@ function autoAlign(f){
   if(ih){const H=anchors(ih);const nx=neck?neck.x:0,ny=neck?neck.y:-200;const on=O.neckAuto?Math.round((H.trunkBot-H.top+1)*Lh.s*(+O.neckPct||0)/100):ovN;
     Lh.x=Math.round(nx-H.botC.c*Lh.s+(+O.headDx||0)+(+f.hdx||0));Lh.y=Math.round(ny+on-(H.trunkBot+1)*Lh.s)}
   // NSO-style bob, in NSO pixels (1 px = 1/16 of head height): body up b, head up b+h
-  const bob=f.bob;if(bob&&(bob.b||bob.h)){const b=(+bob.b||0)*U,hd=Math.min(0,+bob.h||0)*U;
+  const bob=f.bob;if(bob&&(bob.b||bob.h)){const b=(+bob.b||0)*U;let hd=(+bob.h||0)*U;if(hd>0&&ih){const on=O.neckAuto?Math.round((anchors(ih).trunkBot-anchors(ih).top+1)*Lh.s*(+O.neckPct||0)/100):ovN;hd=Math.min(hd,Math.max(0,on-2))}
     if(bounce&&il)Ll.y=Math.round(Ll.y-b);if(ib)Lb.y=Math.round(Lb.y-b);if(ih)Lh.y=Math.round(Lh.y-b-hd)}
 }
 function anchorPts(f){
@@ -852,7 +857,7 @@ function renderKpi(){
    <div class="kpi"><div class="l">Nối cổ</div><div class="v" style="font-size:18px">${O.neckMode==='bodyTop'?'Thân đè đầu':'Bỏ cổ'}</div><div class="s">cằm ${O.neckAuto?O.neckPct+'% đầu':O.ovNeck+'px'} · gấu áo ${O.hipAuto?'tự che nắp cạp':O.ovHip+'px'}</div></div>`}
 function syncOpts(){const O=S.opts;
   document.querySelectorAll('input[name=neckMode]').forEach(r=>{r.checked=r.value===O.neckMode;r.closest('label').classList.toggle('on',r.checked)});
-  $('#oNeck').value=O.ovNeck;$('#oNeck').disabled=!!O.neckAuto;$('#oNeckAuto').checked=!!O.neckAuto;$('#oHipAuto').checked=!!O.hipAuto;$('#oFit').checked=!!O.fitLegs;$('#oFitPct').value=O.fitPct;$('#oNeckPct').value=O.neckPct;$('#oHip').value=O.ovHip;$('#oDark').checked=!!O.darkNeck;$('#oNsoOrder').checked=!!O.nsoOrder;$('#oFringe').checked=!!O.defringe;
+  $('#oNeck').value=O.ovNeck;$('#oNeck').disabled=!!O.neckAuto;$('#oNeckAuto').checked=!!O.neckAuto;$('#oHipAuto').checked=!!O.hipAuto;$('#oFit').checked=!!O.fitLegs;$('#oFitPct').value=O.fitPct;$('#oNeckPct').value=O.neckPct;$('#oHip').value=O.ovHip;$('#oDark').checked=!!O.darkNeck;$('#oNsoOrder').checked=!!O.nsoOrder;$('#oNsoLegs').checked=O.nsoLegs!==false;$('#oFringe').checked=!!O.defringe;
   $('#ovNeck').value=O.ovNeck;$('#ovHip').value=O.ovHip;$('#fitLegs').checked=!!O.fitLegs;$('#fitPct').value=O.fitPct}
 function applyNeckMode(m){const hi=S.layers.findIndex(l=>l.key==='head');if(hi<0||!S.layers.find(l=>l.key==='body'))return;
   const H=S.layers.splice(hi,1)[0];const bi=S.layers.findIndex(l=>l.key==='body');S.layers.splice(m==='headTop'?bi+1:bi,0,H);S.opts.neckMode=m}
@@ -929,10 +934,10 @@ function renderDashLib(){
 async function renderDash(){if(!S)return;S.frames.forEach(ensureLayers);syncOpts();renderKpi();renderAnims();renderFrameTable();renderDashLib();renderProjCards((await DB.get('index'))||[])}
 const NSO_MOTION={
   idle:{ms:[240,200],b:[1,0],h:[0,0]},
-  // NSO Char.java Class127 frames 2-6 (run, statusMe 2): body top 16,16,16,17,16 -> b; head-body 17,16,18,17,17 -> h (lag down only)
+  // NSO Char.java Class127 frames 2-6 (run, statusMe 2): body top 16,16,16,17,16 -> b; head-body 17,16,18,17,17 -> h (head tops 33,32,34,34,33)
   // NSO has no separate walk: walk reuses the run pattern, slower
   walk:{ms:[140],b:[0,0,0,1,0],h:[0,-1,0,0,0]},
-  run:{ms:[80],b:[0,0,0,1,0],h:[0,-1,0,0,0]},
+  run:{ms:[80],b:[0,0,0,1,0],h:[0,-1,1,0,0]},
   jump:{ms:[200],b:[0],h:[0]}};
 function applyNsoMotion(){S.frames.forEach(f=>{const g=groupOf(f),m=NSO_MOTION[g];if(!m)return;const idx=S.frames.filter(o=>groupOf(o)===g).indexOf(f);
   f.ms=m.ms[idx%m.ms.length];f.bob={b:m.b[idx%m.b.length],h:m.h[idx%m.h.length]}});S.frames.forEach(f=>{if(!f.placed)autoAlign(f)})}
@@ -951,7 +956,7 @@ function bindDash(){
   $('#oFitPct').onchange=e=>change(()=>{S.opts.fitPct=+e.target.value||88;S.frames.forEach(f=>{if(!f.placed)autoAlign(f)})});
   $('#oHipAuto').onchange=e=>change(()=>{S.opts.hipAuto=e.target.checked;S.frames.forEach(f=>{if(!f.placed)autoAlign(f)})});
   $('#oNeckAuto').onchange=e=>change(()=>{S.opts.neckAuto=e.target.checked;S.frames.forEach(f=>{if(!f.placed)autoAlign(f)})});$('#oNeckPct').onchange=e=>change(()=>{S.opts.neckPct=+e.target.value||0;S.opts.neckPctSet=true;S.frames.forEach(f=>{if(!f.placed)autoAlign(f)})});
-  $('#oDark').onchange=e=>change(()=>S.opts.darkNeck=e.target.checked);$('#oNsoOrder').onchange=e=>change(()=>S.opts.nsoOrder=e.target.checked);$('#oFringe').onchange=e=>change(()=>S.opts.defringe=e.target.checked);
+  $('#oDark').onchange=e=>change(()=>S.opts.darkNeck=e.target.checked);$('#oNsoOrder').onchange=e=>change(()=>S.opts.nsoOrder=e.target.checked);$('#oNsoLegs').onchange=e=>change(()=>{S.opts.nsoLegs=e.target.checked;S.frames.forEach(f=>{if(!f.placed)autoAlign(f)})});$('#oFringe').onchange=e=>change(()=>S.opts.defringe=e.target.checked);
   $('#oApply').onclick=()=>{change(()=>S.frames.forEach(f=>{autoAlign(f);f.placed=false}));toast('Đã căn lại mọi khung')};
   // editor-side inputs write to the same options
   $('#ovNeck').onchange=e=>change(()=>S.opts.ovNeck=+e.target.value||0);$('#ovHip').onchange=e=>change(()=>S.opts.ovHip=+e.target.value||0);
