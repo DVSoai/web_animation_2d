@@ -423,8 +423,7 @@ async function saveNow(){if(!S)return;S.updated=Date.now();await DB.set('proj:'+
 function uid(){return Math.random().toString(36).slice(2,9)}
 function emptyL(){return {img:null,x:0,y:0,s:1,vis:true}}
 function defaultFrames(layers){
-  const L=[['idle-0','Đứng 1',600],['idle-1','Đứng 2',600],['walk-0','Đi 1',140],['walk-1','Đi 2',140],['walk-2','Đi 3',140],['walk-3','Đi 4',140],['walk-4','Đi 5',140],
-  ['run-0','Chạy 1',80],['run-1','Chạy 2',80],['run-2','Chạy 3',80],['run-3','Chạy 4',80],['run-4','Chạy 5',80],['jump-0','Nhảy 1',200],['jump-1','Nhảy 2',200],['jump-2','Nhảy 3',200],['jump-3','Nhảy 4',200]];
+  const L=[['idle-0','Đứng 1',600],['idle-1','Đứng 2',600],['run-0','Chạy 1',80],['run-1','Chạy 2',80],['run-2','Chạy 3',80],['run-3','Chạy 4',80],['run-4','Chạy 5',80],['jump-0','Nhảy 1',200],['jump-1','Nhảy 2',200],['jump-2','Nhảy 3',200],['jump-3','Nhảy 4',200]];
   return L.map(([id,name,ms])=>({id,name,ms,L:Object.fromEntries(layers.map(l=>[l.key,emptyL()]))}));
 }
 function defOpts(mode){return {hipAuto:true,neckMode:mode||'headTop',neckAuto:mode!=='bodyTop',neckPct:2,ovNeck:mode==='bodyTop'?10:12,ovHip:8,darkNeck:false,defringe:true,fitLegs:true,fitPct:88,nsoOrder:true}}
@@ -624,7 +623,7 @@ function renderCanvasInputs(){const c=S.canvas;$('#cW').value=c.w;$('#cH').value
 const GAME={raf:0,x:800,dir:1,k:0,next:0,last:0,grp:''};
 function gameGroups(){const gs=[];S.frames.forEach(f=>{const g=groupOf(f);if(!gs.includes(g))gs.push(g)});return gs}
 function syncGame(){if(!S)return;const sel=$('#gGroup'),gs=gameGroups(),cur=sel.value;
-  sel.innerHTML=gs.map(g=>`<option value="${esc(g)}">${esc(g)}</option>`).join('');sel.value=gs.includes(cur)?cur:(gs.includes('walk')?'walk':gs[0]||'');
+  sel.innerHTML=gs.map(g=>`<option value="${esc(g)}">${esc(g)}</option>`).join('');sel.value=gs.includes(cur)?cur:(gs.includes('run')?'run':gs[0]||'');
   $('#gHeadDx').value=(S.opts&&S.opts.headDx)||0;$('#gHip').value=S.opts?S.opts.ovHip:8;if(S.opts)syncOpts();startGame()}
 function gameRefH(){const f=S.frames.find(f=>groupOf(f)==='idle'&&bbox(f))||S.frames.find(f=>bbox(f));if(!f)return 0;const b=bbox(f);return b.y1-b.y0}
 function drawScene(c,W,H,GY){
