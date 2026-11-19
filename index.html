@@ -39,7 +39,15 @@ label.chk{display:flex;gap:6px;align-items:center;font-size:13px;cursor:pointer;
 .lib .it.inuse{box-shadow:inset 0 0 0 2px #9fbfb3}
 .lib .it.pick{outline:2px solid var(--acc2)}
 .libedit{border:1px solid var(--line);border-radius:8px;padding:8px;margin-top:8px;background:#fff}
-.center{display:flex;flex-direction:column;gap:8px;min-width:0;min-height:0}
+.center{display:flex;flex-direction:column;gap:8px;min-width:0;min-height:0;overflow-y:auto}
+.center>.stage{flex:none;height:calc(100vh - 300px)}
+.game{border:1px solid var(--line);border-radius:10px;background:#fff;padding:8px;display:flex;flex-direction:column;gap:6px}
+.game h3{margin:0;font-size:14px}
+.game .gwrap{overflow:auto;border-radius:8px;background:#1d2420}
+.game canvas{display:block;width:100%;height:auto;image-rendering:auto}
+.game.real canvas{width:1600px;max-width:none}
+.game .f{width:auto}
+.game .f input{width:70px}
 .tools{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 .stage{flex:1;background:#e4e0d6;border:1px solid var(--line);border-radius:10px;overflow:auto;min-height:300px;position:relative;display:grid;place-items:center}
 canvas#cv{background:#fff;box-shadow:0 1px 6px rgba(0,0,0,.12);cursor:grab;touch-action:none;margin:16px}
@@ -196,6 +204,7 @@ table.ftab input[type=number]{width:70px}
           <div class="f">Gấu áo đè cạp quần (px)<input type="number" id="oHip"></div>
         </div>
         <label class="chk" style="white-space:normal"><input type="checkbox" id="oFit">Thu mọi mảnh chân cùng một tỉ lệ để cạp quần chỉ rộng <input type="number" id="oFitPct" style="width:56px">% gấu áo (NSO: 13/15 ≈ 87%), áo phủ ra ngoài quần</label>
+        <label class="chk" style="white-space:normal"><input type="checkbox" id="oNsoOrder">Thứ tự lớp theo NSO (Char.java): khung <b>đứng</b> vẽ chân → thân → đầu (đầu trên cùng); khung <b>đi, chạy, nhảy</b> vẽ chân → đầu → thân (thân đè cằm)</label>
         <label class="chk" style="white-space:normal"><input type="checkbox" id="oHipAuto">Tự đè gấu áo xuống hết “nắp” cạp quần nếu mảnh chân có vẽ (NSO: đỉnh quần luôn nằm khuất dưới áo)</label>
         <label class="chk" style="white-space:normal"><input type="checkbox" id="oNeckAuto">Tự tính độ chồng cằm như NSO: <input type="number" id="oNeckPct" style="width:56px">% chiều cao đầu (NSO nhìn nghiêng: đầu đặt ngay trên thân, 0–2%; lún sâu hơn sẽ trông gù)</label>
         <label class="chk" style="white-space:normal"><input type="checkbox" id="oDark">Khi cắt tờ sprite: tô tối phần da cổ trong cổ áo (thường để TẮT: NSO giữ cổ màu da ngay dưới quai hàm để giấu đường nối)</label>
@@ -281,6 +290,20 @@ table.ftab input[type=number]{width:70px}
       <button id="bAutoAll">Tự căn tất cả</button>
     </div>
     <div class="timeline" id="timeline"></div>
+    <section class="game" id="gameBox">
+      <div class="tools">
+        <h3>Xem trong game</h3>
+        <select id="gGroup" style="width:auto"></select>
+        <div class="f">Cao nhân vật (px)<input type="number" id="gH" value="96" min="16" max="600"></div>
+        <label class="chk"><input type="checkbox" id="gWalk" checked>Đi qua lại</label>
+        <label class="chk"><input type="checkbox" id="gReal">Đúng cỡ 1:1</label>
+        <span style="flex:1"></span>
+        <div class="f">Dời đầu ngang (px)<input type="number" id="gHeadDx" step="1"></div>
+        <div class="f">Áo đè cạp quần (px)<input type="number" id="gHip" step="1"></div>
+      </div>
+      <div class="gwrap"><canvas id="gv" width="1600" height="720"></canvas></div>
+      <div class="small">Màn hình game 1600×720. Cả bộ khung được thu đều để nhân vật (đứng, từ đỉnh đầu tới chân) cao đúng số px đã chọn; không bóp méo mảnh nào. Thước bên trái chia theo đơn vị NSO (nhân vật NSO đứng cao khoảng 32 đơn vị) để so cỡ. "Dời đầu ngang" và "Áo đè cạp quần" áp cho mọi khung rồi tự căn lại.</div>
+    </section>
   </div>
 
   <!-- RIGHT -->
@@ -402,10 +425,10 @@ function defaultFrames(layers){
   ['run-0','Chạy 1',110],['run-1','Chạy 2',110],['run-2','Chạy 3',110],['run-3','Chạy 4',110],['jump-0','Nhảy 1',200],['jump-1','Nhảy 2',200],['jump-2','Nhảy 3',200],['jump-3','Nhảy 4',200]];
   return L.map(([id,name,ms])=>({id,name,ms,L:Object.fromEntries(layers.map(l=>[l.key,emptyL()]))}));
 }
-function defOpts(mode){return {hipAuto:true,neckMode:mode||'headTop',neckAuto:mode!=='bodyTop',neckPct:2,ovNeck:mode==='bodyTop'?10:12,ovHip:8,darkNeck:false,defringe:true,fitLegs:true,fitPct:88}}
+function defOpts(mode){return {hipAuto:true,neckMode:mode||'headTop',neckAuto:mode!=='bodyTop',neckPct:2,ovNeck:mode==='bodyTop'?10:12,ovHip:8,darkNeck:false,defringe:true,fitLegs:true,fitPct:88,nsoOrder:true}}
 function newProject(name){const layers=[{key:'legs',label:'Chân'},{key:'body',label:'Thân'},{key:'head',label:'Đầu'}];
   return {v:2,name:name||'Nhân vật mới',canvas:{w:480,h:480,rx:240,ry:400},layers,lib:[],frames:defaultFrames(layers),cur:0,sel:'body',opts:defOpts('headTop')}}
-function withOpts(p){if(p.opts&&p.opts.neckPct===12&&!p.opts.neckPctSet)p.opts.neckPct=2;if(p.opts&&p.opts.fitPct===4){p.opts.fitPct=88;p.opts.fitLegs=true}if(p.opts&&p.opts.hipAuto===undefined)p.opts.hipAuto=true;if(p.opts&&p.opts.neckPct===undefined){p.opts.neckPct=2;p.opts.neckAuto=p.opts.neckMode!=='bodyTop'}if(!p.opts){const hi=p.layers.findIndex(l=>l.key==='head'),bi=p.layers.findIndex(l=>l.key==='body');p.opts=defOpts(hi>bi&&bi>=0?'headTop':'bodyTop')}return p}
+function withOpts(p){if(p.opts&&p.opts.neckPct===12&&!p.opts.neckPctSet)p.opts.neckPct=2;if(p.opts&&p.opts.fitPct===4){p.opts.fitPct=88;p.opts.fitLegs=true}if(p.opts&&p.opts.hipAuto===undefined)p.opts.hipAuto=true;if(p.opts&&p.opts.nsoOrder===undefined)p.opts.nsoOrder=true;if(p.opts&&p.opts.neckPct===undefined){p.opts.neckPct=2;p.opts.neckAuto=p.opts.neckMode!=='bodyTop'}if(!p.opts){const hi=p.layers.findIndex(l=>l.key==='head'),bi=p.layers.findIndex(l=>l.key==='body');p.opts=defOpts(hi>bi&&bi>=0?'headTop':'bodyTop')}return p}
 function migrate(p){
   if(p.v===2)return withOpts(p);
   // v1: order + frames[].layers{}
@@ -482,7 +505,7 @@ function autoAlign(f){
   if(ib){const B=anchors(ib);const wx=waist?waist.x:0,wy=waist?waist.y:-120;
     Lb.x=Math.round(wx-B.botC.c*Lb.s);Lb.y=Math.round(wy+ovHip-(B.trunkBot+1)*Lb.s);neck={x:Lb.x+B.neckC*Lb.s,y:Lb.y+B.neckY*Lb.s}}
   if(ih){const H=anchors(ih);const nx=neck?neck.x:0,ny=neck?neck.y:-200;const on=O.neckAuto?Math.round((H.trunkBot-H.top+1)*Lh.s*(+O.neckPct||0)/100):ovN;
-    Lh.x=Math.round(nx-H.botC.c*Lh.s);Lh.y=Math.round(ny+on-(H.trunkBot+1)*Lh.s)}
+    Lh.x=Math.round(nx-H.botC.c*Lh.s+(+O.headDx||0));Lh.y=Math.round(ny+on-(H.trunkBot+1)*Lh.s)}
   // NSO-style bob, in NSO pixels (1 px = 1/16 of head height): body up b, head up b+h
   const bob=f.bob;if(bob&&(bob.b||bob.h)){const b=(+bob.b||0)*U,hd=Math.min(0,+bob.h||0)*U;
     if(bounce&&il)Ll.y=Math.round(Ll.y-b);if(ib)Lb.y=Math.round(Lb.y-b);if(ih)Lh.y=Math.round(Lh.y-b-hd)}
@@ -498,9 +521,12 @@ function anchorPts(f){
 
 // ================= render =================
 const cv=$('#cv'),g=cv.getContext('2d');
+// NSO Char.java paint: standing (statusMe 1/6) = legs, body, head; every other state = legs, head, body
+function orderFor(f){const L=S.layers;if(!S.opts||!S.opts.nsoOrder)return L;const hi=L.findIndex(l=>l.key==='head'),bi=L.findIndex(l=>l.key==='body');if(hi<0||bi<0)return L;
+  const o=L.filter(l=>l.key!=='head'),b=o.findIndex(l=>l.key==='body');o.splice(groupOf(f)==='idle'?b+1:b,0,L[hi]);return o}
 function drawFrame(ctx,f,ox,oy,sc,alpha=1,flip=false){
   ctx.save();ctx.globalAlpha=alpha;ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
-  for(const l of S.layers){const L=f.L[l.key];if(!L||!L.vis)continue;const r=rectOf(L);if(!r)continue;const im=IM[r.it.id];if(!im)continue;
+  for(const l of orderFor(f)){const L=f.L[l.key];if(!L||!L.vis)continue;const r=rectOf(L);if(!r)continue;const im=IM[r.it.id];if(!im)continue;
     if(flip){ctx.save();ctx.translate(ox,oy);ctx.scale(-1,1);ctx.drawImage(im,r.x*sc,r.y*sc,r.w*sc,r.h*sc);ctx.restore()}else ctx.drawImage(im,ox+r.x*sc,oy+r.y*sc,r.w*sc,r.h*sc)}
   ctx.restore()}
 function render(){
@@ -592,8 +618,41 @@ function renderTimeline(){
   sel.innerHTML='<option value="*">Tất cả khung</option>'+grp.map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join('');if([...sel.options].some(o=>o.value===prev))sel.value=prev;
 }
 function renderCanvasInputs(){const c=S.canvas;$('#cW').value=c.w;$('#cH').value=c.h;$('#cRX').value=c.rx;$('#cRY').value=c.ry}
+// ================= in-game preview =================
+const GAME={raf:0,x:800,dir:1,k:0,next:0,last:0,grp:''};
+function gameGroups(){const gs=[];S.frames.forEach(f=>{const g=groupOf(f);if(!gs.includes(g))gs.push(g)});return gs}
+function syncGame(){if(!S)return;const sel=$('#gGroup'),gs=gameGroups(),cur=sel.value;
+  sel.innerHTML=gs.map(g=>`<option value="${esc(g)}">${esc(g)}</option>`).join('');sel.value=gs.includes(cur)?cur:(gs.includes('walk')?'walk':gs[0]||'');
+  $('#gHeadDx').value=(S.opts&&S.opts.headDx)||0;$('#gHip').value=S.opts?S.opts.ovHip:8;startGame()}
+function gameRefH(){const f=S.frames.find(f=>groupOf(f)==='idle'&&bbox(f))||S.frames.find(f=>bbox(f));if(!f)return 0;const b=bbox(f);return b.y1-b.y0}
+function drawScene(c,W,H,GY){
+  const sky=c.createLinearGradient(0,0,0,GY);sky.addColorStop(0,'#9fc9e6');sky.addColorStop(1,'#e8f1e4');c.fillStyle=sky;c.fillRect(0,0,W,GY);
+  c.fillStyle='#a9c49a';c.beginPath();c.moveTo(0,GY);for(let x=0;x<=W;x+=40)c.lineTo(x,GY-90-60*Math.sin(x/260)-25*Math.sin(x/97));c.lineTo(W,GY);c.fill();
+  c.fillStyle='#86ab76';c.beginPath();c.moveTo(0,GY);for(let x=0;x<=W;x+=40)c.lineTo(x,GY-35-25*Math.sin(x/180+1));c.lineTo(W,GY);c.fill();
+  c.fillStyle='#7a5a3a';c.fillRect(0,GY,W,H-GY);c.fillStyle='#5f8f45';c.fillRect(0,GY,W,10);
+  c.fillStyle='rgba(0,0,0,.08)';for(let x=0;x<W;x+=64)c.fillRect(x,GY+10,2,H-GY)}
+function drawRuler(c,GY,unit){c.save();c.fillStyle='rgba(255,255,255,.85)';c.fillRect(8,GY-40*unit-14,64,40*unit+20);c.strokeStyle='#2b2f2d';c.fillStyle='#2b2f2d';c.lineWidth=1;c.font='12px ui-monospace,monospace';
+  c.beginPath();c.moveTo(56.5,GY);c.lineTo(56.5,GY-40*unit);for(let u=0;u<=40;u+=4){const y=Math.round(GY-u*unit)+.5;c.moveTo(u%8?50:44,y);c.lineTo(62,y)}c.stroke();
+  for(let u=0;u<=40;u+=8)c.fillText(String(u),14,GY-u*unit+4);c.fillStyle='#b4492f';const y32=Math.round(GY-32*unit)+.5;c.fillRect(44,y32-1,22,3);c.fillText('◄ NSO 32',70,y32+4);c.restore()}
+function gameTick(t){GAME.raf=requestAnimationFrame(gameTick);if(!S||isDash())return;const box=$('#gameBox');if(!box)return;const r=box.getBoundingClientRect();if(r.bottom<0||r.top>innerHeight)return;
+  const c=$('#gv').getContext('2d'),W=1600,H=720,GY=600;const dt=GAME.last?Math.min(.1,(t-GAME.last)/1000):0;GAME.last=t;
+  const grp=$('#gGroup').value,fs=S.frames.filter(f=>groupOf(f)===grp);drawScene(c,W,H,GY);
+  const refH=gameRefH(),want=Math.max(8,+$('#gH').value||96),sc=refH?want/refH:1;drawRuler(c,GY,want/32);
+  if(!fs.length||!refH){c.fillStyle='#fff';c.font='20px sans-serif';c.fillText('Chưa có khung để xem.',100,100);return}
+  if(grp!==GAME.grp){GAME.grp=grp;GAME.k=0;GAME.next=t}
+  if(t>=GAME.next){GAME.k=(GAME.k+1)%fs.length;GAME.next=t+(fs[GAME.k].ms||120)}
+  const moving=$('#gWalk').checked&&(grp==='walk'||grp==='run');
+  if(moving){const v=(grp==='run'?2.6:1.2)*want;GAME.x+=GAME.dir*v*dt;const m=want;if(GAME.x>W-m){GAME.x=W-m;GAME.dir=-1}if(GAME.x<120+m){GAME.x=120+m;GAME.dir=1}}else GAME.x=W/2;
+  const f=fs[GAME.k%fs.length];c.fillStyle='rgba(0,0,0,.22)';c.beginPath();c.ellipse(GAME.x,GY+2,want*.28,want*.06,0,0,7);c.fill();
+  drawFrame(c,f,Math.round(GAME.x),GY,sc,1,GAME.dir<0)}
+function startGame(){if(!GAME.raf)GAME.raf=requestAnimationFrame(gameTick)}
+function bindGame(){
+  $('#gReal').onchange=e=>$('#gameBox').classList.toggle('real',e.target.checked);
+  $('#gHeadDx').onchange=e=>change(()=>{S.opts.headDx=Math.round(+e.target.value||0);S.frames.forEach(f=>{if(!f.placed)autoAlign(f)})});
+  $('#gHip').onchange=e=>change(()=>{S.opts.ovHip=Math.round(+e.target.value||0);S.frames.forEach(f=>{if(!f.placed)autoAlign(f)})});
+}
 function renderAll(){if(!S)return;S.frames.forEach(ensureLayers);if(!S.layers.find(l=>l.key===S.sel))S.sel=S.layers[S.layers.length-1].key;
-  renderLib();renderLayerDefs();renderLayers();renderTimeline();renderCanvasInputs();render();updUndo();
+  renderLib();renderLayerDefs();renderLayers();renderTimeline();renderCanvasInputs();render();updUndo();syncGame();
   const det=$('#jsonView').closest('details');if(det.open)$('#jsonView').textContent=JSON.stringify(exportRig(),null,1)}
 
 // ================= dialogs =================
@@ -677,8 +736,8 @@ function libNames(){const m={},used={};for(const it of S.lib){let b=safe(it.name
 function exportRig(){const nm=libNames();
   return {format:'xuong-ghep-nhan-vat/2',name:S.name,canvas:{width:S.canvas.w,height:S.canvas.h},root:{x:S.canvas.rx,y:S.canvas.ry},
     order:S.layers.map(l=>l.key),layers:S.layers,
-    note:'x,y = góc trên-trái của mảnh tính từ điểm gốc (đã nhân scale). Vẽ theo order: phần tử đầu nằm sau cùng. Lật trái: x_trái = -(x + width).',
-    frames:S.frames.map(f=>{const P=anchorPts(f);return {id:f.id,label:f.name,ms:f.ms,
+    note:'x,y = góc trên-trái của mảnh tính từ điểm gốc (đã nhân scale). Mỗi khung vẽ theo frames[].order (phần tử đầu nằm sau cùng); order chung chỉ là mặc định. Lật trái: x_trái = -(x + width).',
+    frames:S.frames.map(f=>{const P=anchorPts(f);return {id:f.id,label:f.name,ms:f.ms,order:orderFor(f).map(l=>l.key),
       layers:S.layers.map(l=>{const L=f.L[l.key];const it=L&&lib(L.img);return it?{part:l.key,file:`parts/${nm[it.id]}.png`,x:L.x,y:L.y,scale:L.s,width:Math.round(it.w*L.s),height:Math.round(it.h*L.s),visible:L.vis}:{part:l.key,file:null}}),
       anchors:Object.fromEntries(Object.entries(P).map(([k,v])=>[k,Object.fromEntries(Object.entries(v).map(([a,b])=>[a,+b.toFixed(1)]))]))}})}}
 function dl(name,blob){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},2000)}
@@ -792,7 +851,7 @@ function renderKpi(){
    <div class="kpi"><div class="l">Nối cổ</div><div class="v" style="font-size:18px">${O.neckMode==='bodyTop'?'Thân đè đầu':'Bỏ cổ'}</div><div class="s">cằm ${O.neckAuto?O.neckPct+'% đầu':O.ovNeck+'px'} · gấu áo ${O.hipAuto?'tự che nắp cạp':O.ovHip+'px'}</div></div>`}
 function syncOpts(){const O=S.opts;
   document.querySelectorAll('input[name=neckMode]').forEach(r=>{r.checked=r.value===O.neckMode;r.closest('label').classList.toggle('on',r.checked)});
-  $('#oNeck').value=O.ovNeck;$('#oNeck').disabled=!!O.neckAuto;$('#oNeckAuto').checked=!!O.neckAuto;$('#oHipAuto').checked=!!O.hipAuto;$('#oFit').checked=!!O.fitLegs;$('#oFitPct').value=O.fitPct;$('#oNeckPct').value=O.neckPct;$('#oHip').value=O.ovHip;$('#oDark').checked=!!O.darkNeck;$('#oFringe').checked=!!O.defringe;
+  $('#oNeck').value=O.ovNeck;$('#oNeck').disabled=!!O.neckAuto;$('#oNeckAuto').checked=!!O.neckAuto;$('#oHipAuto').checked=!!O.hipAuto;$('#oFit').checked=!!O.fitLegs;$('#oFitPct').value=O.fitPct;$('#oNeckPct').value=O.neckPct;$('#oHip').value=O.ovHip;$('#oDark').checked=!!O.darkNeck;$('#oNsoOrder').checked=!!O.nsoOrder;$('#oFringe').checked=!!O.defringe;
   $('#ovNeck').value=O.ovNeck;$('#ovHip').value=O.ovHip;$('#fitLegs').checked=!!O.fitLegs;$('#fitPct').value=O.fitPct}
 function applyNeckMode(m){const hi=S.layers.findIndex(l=>l.key==='head');if(hi<0||!S.layers.find(l=>l.key==='body'))return;
   const H=S.layers.splice(hi,1)[0];const bi=S.layers.findIndex(l=>l.key==='body');S.layers.splice(m==='headTop'?bi+1:bi,0,H);S.opts.neckMode=m}
@@ -889,7 +948,7 @@ function bindDash(){
   $('#oFitPct').onchange=e=>change(()=>{S.opts.fitPct=+e.target.value||88;S.frames.forEach(f=>{if(!f.placed)autoAlign(f)})});
   $('#oHipAuto').onchange=e=>change(()=>{S.opts.hipAuto=e.target.checked;S.frames.forEach(f=>{if(!f.placed)autoAlign(f)})});
   $('#oNeckAuto').onchange=e=>change(()=>{S.opts.neckAuto=e.target.checked;S.frames.forEach(f=>{if(!f.placed)autoAlign(f)})});$('#oNeckPct').onchange=e=>change(()=>{S.opts.neckPct=+e.target.value||0;S.opts.neckPctSet=true;S.frames.forEach(f=>{if(!f.placed)autoAlign(f)})});
-  $('#oDark').onchange=e=>change(()=>S.opts.darkNeck=e.target.checked);$('#oFringe').onchange=e=>change(()=>S.opts.defringe=e.target.checked);
+  $('#oDark').onchange=e=>change(()=>S.opts.darkNeck=e.target.checked);$('#oNsoOrder').onchange=e=>change(()=>S.opts.nsoOrder=e.target.checked);$('#oFringe').onchange=e=>change(()=>S.opts.defringe=e.target.checked);
   $('#oApply').onclick=()=>{change(()=>S.frames.forEach(f=>{autoAlign(f);f.placed=false}));toast('Đã căn lại mọi khung')};
   // editor-side inputs write to the same options
   $('#ovNeck').onchange=e=>change(()=>S.opts.ovNeck=+e.target.value||0);$('#ovHip').onchange=e=>change(()=>S.opts.ovHip=+e.target.value||0);
@@ -915,7 +974,7 @@ function fitZoom(){const st=$('#stage');const z=Math.min((st.clientWidth-40)/S.c
 
 // ================= events =================
 function canvasPt(e){const r=cv.getBoundingClientRect();const px=(e.clientX-r.left)*(cv.width/r.width)/view.z,py=(e.clientY-r.top)*(cv.height/r.height)/view.z;let x=px-S.canvas.rx;if(view.flip)x=-x;return {x,y:py-S.canvas.ry}}
-function hit(f,p){for(const l of [...S.layers].reverse()){const L=f.L[l.key];if(!L||!L.vis)continue;const r=rectOf(L);if(!r)continue;
+function hit(f,p){for(const l of [...orderFor(f)].reverse()){const L=f.L[l.key];if(!L||!L.vis)continue;const r=rectOf(L);if(!r)continue;
   if(p.x>=r.x&&p.x<r.x+r.w&&p.y>=r.y&&p.y<r.y+r.h){const ix=Math.floor((p.x-r.x)/L.s),iy=Math.floor((p.y-r.y)/L.s);if(alphaOf(r.it)[iy*r.it.w+ix])return l.key}}return null}
 function bind(){
   $('#drop').onclick=()=>$('#fImg').click();$('#fImg').onchange=e=>{const f=[...e.target.files];if(f.length)addImages(f);e.target.value=''};
@@ -979,7 +1038,7 @@ function bind(){
 function dupFrame(){change(()=>{const c=JSON.parse(JSON.stringify(fr()));const m=c.id.match(/^(.*?)-(\d+)$/);c.id=m?`${m[1]}-${+m[2]+1}`:c.id+'-b';c.name=c.name+' (bản sao)';S.frames.splice(S.cur+1,0,c);S.cur++})}
 
 (async function init(){
-  bind();bindDash();let v='dash';try{v=localStorage.getItem('xg:view')||'dash'}catch(e){}document.body.classList.toggle('v-dash',v==='dash');document.body.classList.toggle('v-edit',v==='edit');$('#navDash').classList.toggle('on',v==='dash');$('#navEdit').classList.toggle('on',v==='edit');
+  bind();bindDash();bindGame();let v='dash';try{v=localStorage.getItem('xg:view')||'dash'}catch(e){}document.body.classList.toggle('v-dash',v==='dash');document.body.classList.toggle('v-edit',v==='edit');$('#navDash').classList.toggle('on',v==='dash');$('#navEdit').classList.toggle('on',v==='edit');
   let idx=(await DB.get('index'))||[];
   // migrate old single-project storage
   try{const old=localStorage.getItem('xuong-ghep-v1');if(old&&!idx.length){await openProject(null,migrate(JSON.parse(old)));localStorage.removeItem('xuong-ghep-v1');return}}catch(e){}
