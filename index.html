@@ -551,7 +551,7 @@ function status(f){
   const P=anchorPts(f),r1=v=>Math.round(v*10)/10,s=[];const L=f.L[S.sel];
   if(L&&L.img)s.push(`<b>${esc(label(S.sel))}</b> x ${L.x}, y ${L.y}, ×${L.s}`);
   if(P.hem&&P.waist){const dx=r1(P.hem.x-P.waist.x),ov=r1(P.hem.y-P.waist.y);s.push(`hông: lệch x <span class="${Math.abs(dx)>2?'bad':''}">${dx}</span>, áo đè cạp <span class="${ov<2?'bad':''}">${ov}</span> px`)}
-  if(P.chin&&P.neck){const dx=r1(P.chin.x-P.neck.x),ov=r1(P.chin.y-P.neck.y);s.push(`cổ: lệch x <span class="${Math.abs(dx)>2?'bad':''}">${dx}</span>, cằm chồng cổ áo <span class="${ov<2?'bad':''}">${ov}</span> px`)}
+  if(P.chin&&P.neck){const dx=r1(P.chin.x-P.neck.x-((S.opts&&+S.opts.headDx)||0)),ov=r1(P.chin.y-P.neck.y);s.push(`cổ: lệch x <span class="${Math.abs(dx)>2?'bad':''}">${dx}</span>, cằm chồng cổ áo <span class="${ov<2?'bad':''}">${ov}</span> px`)}
   $('#status').innerHTML=s.join(' · ')||'Chưa có mảnh trong khung này.';
 }
 
@@ -828,7 +828,7 @@ function checkFrame(f){
   const P=anchorPts(f),w=[];let hip=null,neck=null;const r1=v=>Math.round(v*10)/10;
   for(const k of ['legs','body','head']){if(S.layers.find(l=>l.key===k)&&!(f.L[k]&&f.L[k].img))w.push('thiếu '+label(k).toLowerCase())}
   if(P.hem&&P.waist){hip={dx:r1(P.hem.x-P.waist.x),ov:r1(P.hem.y-P.waist.y)};if(Math.abs(hip.dx)>3)w.push('hông lệch ngang');if(hip.ov<2)w.push('áo không đè cạp');if(hip.ov>40)w.push('áo đè quá sâu')}
-  if(P.chin&&P.neck){neck={dx:r1(P.chin.x-P.neck.x),ov:r1(P.chin.y-P.neck.y)};if(Math.abs(neck.dx)>4)w.push('đầu lệch ngang');if(neck.ov<0)w.push('hở cổ');if(neck.ov>24)w.push('đầu lún sâu')}
+  if(P.chin&&P.neck){neck={dx:r1(P.chin.x-P.neck.x-((S.opts&&+S.opts.headDx)||0)),ov:r1(P.chin.y-P.neck.y)};if(Math.abs(neck.dx)>4)w.push('đầu lệch ngang');if(neck.ov<0)w.push('hở cổ');if(neck.ov>24)w.push('đầu lún sâu')}
   return {hip,neck,w}}
 function renderProjCards(idx){const el=$('#dProjs');if(!el)return;idx=[...idx].sort((a,b)=>b.updated-a.updated);
   el.innerHTML=idx.map(p=>`<div class="pj ${p.id===PID?'cur':''}" data-id="${p.id}">${p.thumb?`<img src="${p.thumb}" alt="">`:'<div class="ph"></div>'}<div class="m"><b title="${esc(p.name)}">${esc(p.name)}</b>
