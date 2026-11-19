@@ -315,6 +315,7 @@ table.ftab input[type=number]{width:70px}
         <div class="f">Mã (nhóm-số)<input type="text" id="frId"></div>
         <div class="f">Tên<input type="text" id="frName"></div>
         <div class="f">ms<input type="number" id="frMs"></div>
+        <div class="f" title="Dời chân sang ngang ở khung này; thân và đầu đi theo cạp quần. Giữ nguyên khi Tự căn. Dùng để giữ đầu đứng yên khi chạy mà vẫn giữ cằm trên cổ áo, đai trên cạp (NSO: chân dx đổi −9…−11, đầu cố định).">Chân dời ngang (px)<input type="number" id="frLdx"></div>
         <div class="f" title="Dời riêng đầu sang ngang ở khung này, giữ nguyên khi Tự căn. NSO giữ đầu đứng yên theo chiều ngang khi chạy.">Đầu dời ngang (px)<input type="number" id="frHdx"></div>
         <div class="f" title="Dời thân (kèm đầu) sang ngang riêng khung này, giữ nguyên khi Tự căn. Dùng khi thân nghiêng hoặc tay, đai làm lệch điểm neo gấu áo.">Thân dời ngang (px)<input type="number" id="frBdx"></div>
       </div>
@@ -502,7 +503,7 @@ function autoAlign(f){
   if(il){const A=anchors(il);if(fit){const ls=legScale(pct);if(ls)Ll.s=ls}
     Ll.x=Math.round(-A.topC.c*Ll.s);Ll.y=Math.round(-(A.bot+1)*Ll.s);
     if(refF){const rl=refF.L.legs,rA=anchors(lib(rl.img)),rs=fit?Ll.s:rl.s;const wy=-(rA.bot+1)*rs+rA.top*rs;Ll.y=Math.round(wy-A.top*Ll.s)}
-    waist={x:0,y:Ll.y+A.top*Ll.s}}
+    const ldx=Math.round(+f.ldx||0);Ll.x+=ldx;waist={x:ldx,y:Ll.y+A.top*Ll.s}}
   // cy stays fixed while running (no whole-sprite bounce); body and head rise per Class127, so the hem must still cover the waistband at its highest
   const bounce=false,hh0=ih?(anchors(ih).trunkBot-anchors(ih).top+1)*(Lh?Lh.s:1):120,U=hh0/16;
   const maxB=bounce?0:Math.max(0,...S.frames.filter(o=>groupOf(o)===grp).map(o=>(o.bob&&+o.bob.b)||0));
@@ -612,7 +613,7 @@ function renderLayers(){
       if(a==='copy'){const v=inp.value;if(!v)return;const g=f.id.split('-')[0];change(()=>{S.frames.forEach((o,i)=>{if(o===f)return;const ok=v==='all'||(v==='group'&&o.id.split('-')[0]===g)||(v==='next'&&i===S.cur+1);if(ok){ensureLayers(o);Object.assign(o.L[k],{x:L.x,y:L.y,s:L.s});o.placed=true}})});toast('Đã chép toạ độ');return}
       change(()=>{S.sel=k;if(a==='vis')L.vis=inp.checked;else if(a==='img')L.img=inp.value||null;else L[a]=+inp.value;f.placed=true})});
     el.appendChild(d)}
-  $('#frId').value=f.id;$('#frName').value=f.name;$('#frMs').value=f.ms;$('#frBdx').value=f.bdx||0;$('#frHdx').value=f.hdx||0;
+  $('#frId').value=f.id;$('#frName').value=f.name;$('#frMs').value=f.ms;$('#frBdx').value=f.bdx||0;$('#frHdx').value=f.hdx||0;$('#frLdx').value=f.ldx||0;
 }
 function thumb(f){const c=document.createElement('canvas');const bb=bbox(f);const TW=64,TH=92;c.width=TW;c.height=TH;const x=c.getContext('2d');
   if(bb){const sc=Math.min(TW/(bb.x1-bb.x0+8),TH/(bb.y1-bb.y0+8));drawFrame(x,f,TW/2-((bb.x0+bb.x1)/2)*sc,TH-4-bb.y1*sc,sc)}return c}
@@ -995,7 +996,7 @@ function bind(){
   $('#sAdd').onclick=async()=>{const sel=sheet.pieces.filter(p=>p.on);if(!sel.length)return;pushHist();for(const p of sel){const it={id:uid(),name:p.name,kind:p.kind,src:p.src};await loadImg(it);S.lib.push(it)}autoAssign();$('#dlg').close();after();toast(`Đã thêm ${sel.length} mảnh`)};
   ['cW','cH','cRX','cRY'].forEach(id=>$('#'+id).onchange=()=>change(()=>{S.canvas={w:+$('#cW').value||480,h:+$('#cH').value||480,rx:+$('#cRX').value,ry:+$('#cRY').value}}));
   $('#bAddLayer').onclick=()=>{const name=$('#newLayer').value.trim();if(!name)return;let key=safe(name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/đ/g,'d').replace(/\s+/g,'-'))||'layer';while(S.layers.find(l=>l.key===key))key+='_2';change(()=>{S.layers.push({key,label:name});S.sel=key});$('#newLayer').value=''};
-  $('#frId').onchange=e=>change(()=>fr().id=e.target.value.trim()||fr().id);$('#frName').onchange=e=>change(()=>fr().name=e.target.value);$('#frMs').onchange=e=>change(()=>fr().ms=+e.target.value||100);$('#frBdx').onchange=e=>change(()=>{const f=fr();f.bdx=Math.round(+e.target.value||0);autoAlign(f);f.placed=false});$('#frHdx').onchange=e=>change(()=>{const f=fr();f.hdx=Math.round(+e.target.value||0);autoAlign(f);f.placed=false});
+  $('#frId').onchange=e=>change(()=>fr().id=e.target.value.trim()||fr().id);$('#frName').onchange=e=>change(()=>fr().name=e.target.value);$('#frMs').onchange=e=>change(()=>fr().ms=+e.target.value||100);$('#frBdx').onchange=e=>change(()=>{const f=fr();f.bdx=Math.round(+e.target.value||0);autoAlign(f);f.placed=false});$('#frHdx').onchange=e=>change(()=>{const f=fr();f.hdx=Math.round(+e.target.value||0);autoAlign(f);f.placed=false});$('#frLdx').onchange=e=>change(()=>{const f=fr();f.ldx=Math.round(+e.target.value||0);autoAlign(f);f.placed=false});
   document.querySelectorAll('[data-z]').forEach(b=>b.onclick=()=>{view.z=+b.dataset.z;render()});$('#bZoomFit').onclick=fitZoom;
   $('#bFlip').onclick=()=>{view.flip=!view.flip;$('#bFlip').textContent=view.flip?'Hướng: ← trái':'Hướng: phải →';render()};
   ['tGrid','tOnion','tAnch','tBox','tBg'].forEach(id=>$('#'+id).onchange=render);
