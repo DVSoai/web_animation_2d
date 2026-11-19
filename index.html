@@ -182,7 +182,7 @@ table.ftab input[type=number]{width:70px}
         <button class="pri" id="dSheet">Cắt tờ sprite nền xanh…</button>
         <button id="dAddImg">Thêm ảnh mảnh…</button>
         <button id="dAutoAll">Tự căn tất cả khung</button>
-        <button id="dNso" title="Theo Char.java NSO. Đứng: thở 240/200 ms, khung 2 nâng thân và đầu 1 px. Chạy: 5 khung × 80 ms, thân nhún 1 px ở khung 4, đầu thấp 1 px ở khung 2 và cao 1 px ở khung 3 (đỉnh đầu NSO 33, 32, 34, 34, 33). NSO không có dáng đi riêng: đi dùng nhịp chạy, 140 ms.">Áp nhịp chuyển động NSO</button>
+        <button id="dNso" title="Theo Char.java NSO, một mốc chiều cao chung (khung đứng 1). Đứng: 240/200 ms, khung 2 nâng thân và đầu 1 đơn vị. Chạy: 5 khung × 80 ms, thân cao hơn khung đứng 1 đơn vị (khung 4 là 2), đầu thấp 1 ở khung 2 và cao 1 ở khung 3. Mức nâng được giới hạn để gấu áo vẫn che hết viền cạp quần.">Áp nhịp chuyển động NSO</button>
         <button id="dEdit">Mở trình ghép khung</button>
       </div>
       <div class="ch" style="margin:14px 0 8px"><h3>Xuất</h3></div>
@@ -482,7 +482,10 @@ function anchorsMask(a,w,h){
 const LD={};
 function lidDepth(it){if(LD[it.id]!==undefined)return LD[it.id];const A=anchors(it),w=it.w,h=it.h;const c=document.createElement('canvas');c.width=w;c.height=h;const g=c.getContext('2d');g.drawImage(IM[it.id],0,0);const d=g.getImageData(0,0,w,h).data;
   const cx=Math.round(A.topC.c),lim=Math.min(h-1,A.top+Math.round((A.bot-A.top)*.35));const lum=y=>{let s=0,n=0;for(let x=cx-3;x<=cx+3;x++){if(x<0||x>=w)continue;const i=(y*w+x)*4;if(d[i+3]<128)continue;s+=(d[i]+d[i+1]+d[i+2])/3;n++}return n?s/n:255};
-  let y=A.top;while(y<lim&&lum(y)<45)y++;const lightStart=y;while(y<lim&&lum(y)>=45)y++;if(y>=lim||y-lightStart<4)return LD[it.id]=0;while(y<lim&&lum(y)<45)y++;return LD[it.id]=y-A.top}
+  let y=A.top;while(y<lim&&lum(y)<45)y++;const lightStart=y;while(y<lim&&lum(y)>=45)y++;if(!(y>=lim||y-lightStart<4)){while(y<lim&&lum(y)<45)y++;return LD[it.id]=y-A.top}
+  // dark waistband (whole band under the 45 threshold): outline rows are much darker than the band, so find the second outline relative to the band's own brightness
+  const L=[];for(let yy=A.top;yy<=lim;yy++)L.push(lum(yy));
+  const M=L.filter(v=>v<255),srt2=[...M].sort((p,q)=>p-q),cut2=(srt2[Math.floor(srt2.length/2)]||0)*.55;let k=0;while(k<L.length&&L[k]===255)k++;while(k<L.length&&L[k]<cut2)k++;const b0=k;while(k<L.length&&L[k]>=cut2&&L[k]<255)k++;if(k>=L.length||k-b0<3)return LD[it.id]=0;while(k<L.length&&L[k]<cut2)k++;return LD[it.id]=k}
 function anchors(it){if(AN[it.id])return AN[it.id];return AN[it.id]=anchorsMask(alphaOf(it),it.w,it.h)}
 
 // ================= geometry / align =================
@@ -504,17 +507,16 @@ function autoAlign(f){
     Ll.x=Math.round(-A.topC.c*Ll.s);Ll.y=Math.round(-(A.bot+1)*Ll.s);
     if(refF){const rl=refF.L.legs,rA=anchors(lib(rl.img)),rs=fit?Ll.s:rl.s;const wy=-(rA.bot+1)*rs+rA.top*rs;Ll.y=Math.round(wy-A.top*Ll.s)}
     const ldx=Math.round(+f.ldx||0);Ll.x+=ldx;waist={x:ldx,y:Ll.y+A.top*Ll.s}}
-  // cy stays fixed while running (no whole-sprite bounce); body and head rise per Class127, so the hem must still cover the waistband at its highest
+  // cy stays fixed while running (no whole-sprite bounce). One baseline for every group (NSO idle frame 1, body top 15): body and head rise by b NSO px from it,
+  // capped so the hem still hides the whole waistband band (lidDepth + 2 px, at least 3 px)
   const bounce=false,hh0=ih?(anchors(ih).trunkBot-anchors(ih).top+1)*(Lh?Lh.s:1):120,U=hh0/16;
-  const maxB=bounce?0:Math.max(0,...S.frames.filter(o=>groupOf(o)===grp).map(o=>(o.bob&&+o.bob.b)||0));
   let ovHip=ovH;if(il&&O.hipAuto){const ld=lidDepth(il)*Ll.s;if(ld)ovHip=Math.max(ovH,Math.round(ld+2))}
-  ovHip+=Math.round(maxB*U);
   if(ib){const B=anchors(ib);const wx=waist?waist.x:0,wy=waist?waist.y:-120;
     Lb.x=Math.round(wx-B.botC.c*Lb.s+(+f.bdx||0));Lb.y=Math.round(wy+ovHip-(B.trunkBot+1)*Lb.s);neck={x:Lb.x+B.neckC*Lb.s,y:Lb.y+B.neckY*Lb.s}}
   if(ih){const H=anchors(ih);const nx=neck?neck.x:0,ny=neck?neck.y:-200;const on=O.neckAuto?Math.round((H.trunkBot-H.top+1)*Lh.s*(+O.neckPct||0)/100):ovN;
     Lh.x=Math.round(nx-H.botC.c*Lh.s+(+O.headDx||0)+(+f.hdx||0));Lh.y=Math.round(ny+on-(H.trunkBot+1)*Lh.s)}
   // NSO-style bob, in NSO pixels (1 px = 1/16 of head height): body up b, head up b+h
-  const bob=f.bob;if(bob&&(bob.b||bob.h)){const b=(+bob.b||0)*U;let hd=(+bob.h||0)*U;if(hd>0&&ih){const on=O.neckAuto?Math.round((anchors(ih).trunkBot-anchors(ih).top+1)*Lh.s*(+O.neckPct||0)/100):ovN;hd=Math.min(hd,Math.max(0,on-2))}
+  const bob=f.bob;if(bob&&(bob.b||bob.h)){const minOv=il?Math.max(3,Math.round(lidDepth(il)*Ll.s+2)):3;const b=Math.min((+bob.b||0)*U,Math.max(0,ovHip-minOv));let hd=(+bob.h||0)*U;if(hd>0&&ih){const on=O.neckAuto?Math.round((anchors(ih).trunkBot-anchors(ih).top+1)*Lh.s*(+O.neckPct||0)/100):ovN;hd=Math.min(hd,Math.max(0,on-2))}
     if(bounce&&il)Ll.y=Math.round(Ll.y-b);if(ib)Lb.y=Math.round(Lb.y-b);if(ih)Lh.y=Math.round(Lh.y-b-hd)}
 }
 function anchorPts(f){
@@ -934,11 +936,13 @@ function renderDashLib(){
     el.appendChild(sec)}}
 async function renderDash(){if(!S)return;S.frames.forEach(ensureLayers);syncOpts();renderKpi();renderAnims();renderFrameTable();renderDashLib();renderProjCards((await DB.get('index'))||[])}
 const NSO_MOTION={
-  idle:{ms:[240,200],b:[1,0],h:[0,0]},
-  // NSO Char.java Class127 frames 2-6 (run, statusMe 2): body top 16,16,16,17,16 -> b; head-body 17,16,18,17,17 -> h (head tops 33,32,34,34,33)
-  // NSO has no separate walk: walk reuses the run pattern, slower
-  walk:{ms:[140],b:[0,0,0,1,0],h:[0,-1,0,0,0]},
-  run:{ms:[80],b:[0,0,0,1,0],h:[0,-1,1,0,0]},
+  // NSO Char.java Class127, b = body top minus 15 (idle frame 1), h = (head top - body top) minus 17
+  // idle frames 0-1: body 15,16 / head 32,33 -> b 0,1
+  idle:{ms:[240,200],b:[0,1],h:[0,0]},
+  // run frames 2-6 (statusMe 2): body 16,16,16,17,16 / head 33,32,34,34,33 -> b 1,1,1,2,1; h 0,-1,1,0,0
+  // NSO has no walk state; kept only for projects that add walk frames by hand
+  walk:{ms:[140],b:[1,1,1,2,1],h:[0,-1,1,0,0]},
+  run:{ms:[80],b:[1,1,1,2,1],h:[0,-1,1,0,0]},
   jump:{ms:[200],b:[0],h:[0]}};
 function applyNsoMotion(){S.frames.forEach(f=>{const g=groupOf(f),m=NSO_MOTION[g];if(!m)return;const idx=S.frames.filter(o=>groupOf(o)===g).indexOf(f);
   f.ms=m.ms[idx%m.ms.length];f.bob={b:m.b[idx%m.b.length],h:m.h[idx%m.h.length]}});S.frames.forEach(f=>{if(!f.placed)autoAlign(f)})}
