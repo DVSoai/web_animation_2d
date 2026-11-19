@@ -182,7 +182,7 @@ table.ftab input[type=number]{width:70px}
         <button class="pri" id="dSheet">Cắt tờ sprite nền xanh…</button>
         <button id="dAddImg">Thêm ảnh mảnh…</button>
         <button id="dAutoAll">Tự căn tất cả khung</button>
-        <button id="dNso" title="Đứng: thở 240/200 ms. Đi: 120 ms. Chạy: 80 ms. Thân nhún 1 px NSO ở khung bước qua, đầu trễ một nhịp.">Áp nhịp chuyển động NSO</button>
+        <button id="dNso" title="Theo Char.java NSO. Đứng: thở 240/200 ms, khung 2 nâng thân và đầu 1 px. Chạy: 5 khung × 80 ms, thân nhún 1 px ở khung 4, đầu trễ 1 px ở khung 2. NSO không có dáng đi riêng: đi dùng nhịp chạy, 140 ms.">Áp nhịp chuyển động NSO</button>
         <button id="dEdit">Mở trình ghép khung</button>
       </div>
       <div class="ch" style="margin:14px 0 8px"><h3>Xuất</h3></div>
@@ -421,8 +421,8 @@ async function saveNow(){if(!S)return;S.updated=Date.now();await DB.set('proj:'+
 function uid(){return Math.random().toString(36).slice(2,9)}
 function emptyL(){return {img:null,x:0,y:0,s:1,vis:true}}
 function defaultFrames(layers){
-  const L=[['idle-0','Đứng 1',600],['idle-1','Đứng 2',600],['walk-0','Đi 1',160],['walk-1','Đi 2',160],['walk-2','Đi 3',160],['walk-3','Đi 4',160],
-  ['run-0','Chạy 1',110],['run-1','Chạy 2',110],['run-2','Chạy 3',110],['run-3','Chạy 4',110],['jump-0','Nhảy 1',200],['jump-1','Nhảy 2',200],['jump-2','Nhảy 3',200],['jump-3','Nhảy 4',200]];
+  const L=[['idle-0','Đứng 1',600],['idle-1','Đứng 2',600],['walk-0','Đi 1',140],['walk-1','Đi 2',140],['walk-2','Đi 3',140],['walk-3','Đi 4',140],['walk-4','Đi 5',140],
+  ['run-0','Chạy 1',80],['run-1','Chạy 2',80],['run-2','Chạy 3',80],['run-3','Chạy 4',80],['run-4','Chạy 5',80],['jump-0','Nhảy 1',200],['jump-1','Nhảy 2',200],['jump-2','Nhảy 3',200],['jump-3','Nhảy 4',200]];
   return L.map(([id,name,ms])=>({id,name,ms,L:Object.fromEntries(layers.map(l=>[l.key,emptyL()]))}));
 }
 function defOpts(mode){return {hipAuto:true,neckMode:mode||'headTop',neckAuto:mode!=='bodyTop',neckPct:2,ovNeck:mode==='bodyTop'?10:12,ovHip:8,darkNeck:false,defringe:true,fitLegs:true,fitPct:88,nsoOrder:true}}
@@ -928,8 +928,10 @@ function renderDashLib(){
 async function renderDash(){if(!S)return;S.frames.forEach(ensureLayers);syncOpts();renderKpi();renderAnims();renderFrameTable();renderDashLib();renderProjCards((await DB.get('index'))||[])}
 const NSO_MOTION={
   idle:{ms:[240,200],b:[1,0],h:[0,0]},
-  walk:{ms:[120],b:[0,1,0,1],h:[0,-.5,0,-.5]},
-  run:{ms:[80],b:[0,1,0,1],h:[0,-1,0,-1]},
+  // NSO Char.java Class127 frames 2-6 (run, statusMe 2): body top 16,16,16,17,16 -> b; head-body 17,16,18,17,17 -> h (lag down only)
+  // NSO has no separate walk: walk reuses the run pattern, slower
+  walk:{ms:[140],b:[0,0,0,1,0],h:[0,-1,0,0,0]},
+  run:{ms:[80],b:[0,0,0,1,0],h:[0,-1,0,0,0]},
   jump:{ms:[200],b:[0],h:[0]}};
 function applyNsoMotion(){S.frames.forEach(f=>{const g=groupOf(f),m=NSO_MOTION[g];if(!m)return;const idx=S.frames.filter(o=>groupOf(o)===g).indexOf(f);
   f.ms=m.ms[idx%m.ms.length];f.bob={b:m.b[idx%m.b.length],h:m.h[idx%m.h.length]}});S.frames.forEach(f=>{if(!f.placed)autoAlign(f)})}

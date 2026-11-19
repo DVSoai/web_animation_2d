@@ -7,7 +7,7 @@ Trang web ghép nhân vật 2D tách mảnh **đầu – thân – chân** theo 
 1. **Thêm ảnh**
    - *Cắt tờ sprite…*: tải một tờ sprite nền xanh lá (hoặc nền đồng màu). Trang tự xoá nền, tách từng mảnh, đặt tên theo thứ tự tư thế (hàng 1 = đầu, hàng 2 = thân, các hàng dưới = chân). Ô *đầu cao (px)* để đưa cả tờ về đúng cỡ.
    - Hoặc thả các file PNG trong suốt. Tên file có `head`/`body`/`legs` sẽ được nhận loại tự động; tên có `run-0`, `walk-1`… sẽ được gán đúng khung.
-2. **Ghép**: 14 khung mặc định (đứng 2, đi 4, chạy 4, nhảy 4). Bấm mảnh trong thư viện để gán vào lớp đang chọn, kéo mảnh trên khung để căn, phím mũi tên dời 1 px (Shift: 10 px), `[` `]` đổi khung, Space phát.
+2. **Ghép**: 16 khung mặc định (đứng 2, đi 5, chạy 5, nhảy 4; chạy 5 khung theo NSO, NSO không có dáng đi riêng nên đi dùng lại nhịp chạy, chậm hơn). Bấm mảnh trong thư viện để gán vào lớp đang chọn, kéo mảnh trên khung để căn, phím mũi tên dời 1 px (Shift: 10 px), `[` `]` đổi khung, Space phát.
 3. **Tự căn theo điểm neo**: chân đặt chạm đất ở điểm gốc; thân đặt sao cho tâm gấu áo trùng tâm cạp quần và đè xuống *n* px; đầu đặt sao cho tâm cằm trùng tâm cổ áo. Chấm màu trên khung: xanh dương = cạp quần, vàng = gấu áo, xanh lá = cổ áo, đỏ = cằm. Dòng trạng thái dưới khung báo độ lệch.
 4. **Tải xuống**: `rig.json` (toạ độ), PNG khung đang xem, hoặc ZIP trọn bộ (`parts/`, `frames/`, `rig.json`, `sheet.png`). *Lưu dự án* tạo một file `.json` chứa cả ảnh để mở lại ở máy khác.
 
