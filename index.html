@@ -623,7 +623,7 @@ const GAME={raf:0,x:800,dir:1,k:0,next:0,last:0,grp:''};
 function gameGroups(){const gs=[];S.frames.forEach(f=>{const g=groupOf(f);if(!gs.includes(g))gs.push(g)});return gs}
 function syncGame(){if(!S)return;const sel=$('#gGroup'),gs=gameGroups(),cur=sel.value;
   sel.innerHTML=gs.map(g=>`<option value="${esc(g)}">${esc(g)}</option>`).join('');sel.value=gs.includes(cur)?cur:(gs.includes('walk')?'walk':gs[0]||'');
-  $('#gHeadDx').value=(S.opts&&S.opts.headDx)||0;$('#gHip').value=S.opts?S.opts.ovHip:8;startGame()}
+  $('#gHeadDx').value=(S.opts&&S.opts.headDx)||0;$('#gHip').value=S.opts?S.opts.ovHip:8;if(S.opts)syncOpts();startGame()}
 function gameRefH(){const f=S.frames.find(f=>groupOf(f)==='idle'&&bbox(f))||S.frames.find(f=>bbox(f));if(!f)return 0;const b=bbox(f);return b.y1-b.y0}
 function drawScene(c,W,H,GY){
   const sky=c.createLinearGradient(0,0,0,GY);sky.addColorStop(0,'#9fc9e6');sky.addColorStop(1,'#e8f1e4');c.fillStyle=sky;c.fillRect(0,0,W,GY);
