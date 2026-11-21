@@ -316,6 +316,7 @@ table.ftab input[type=number]{width:70px}
         <div class="f">Tên<input type="text" id="frName"></div>
         <div class="f">ms<input type="number" id="frMs"></div>
         <div class="f" title="Dời chân sang ngang ở khung này; thân và đầu đi theo cạp quần. Giữ nguyên khi Tự căn. Dùng để giữ đầu đứng yên khi chạy mà vẫn giữ cằm trên cổ áo, đai trên cạp (NSO: chân dx đổi −9…−11, đầu cố định).">Chân dời ngang (px)<input type="number" id="frLdx"></div>
+        <div class="f" title="Vẽ thân sau đầu ở riêng khung này (thứ tự NSO khi không đứng: chân, đầu, thân). Dùng cho khung tay giơ qua đầu như nhảy/rơi."><label><input type="checkbox" id="frBodyOver"> Thân đè đầu</label></div>
         <div class="f" title="Dời riêng đầu sang ngang ở khung này, giữ nguyên khi Tự căn. NSO giữ đầu đứng yên theo chiều ngang khi chạy.">Đầu dời ngang (px)<input type="number" id="frHdx"></div>
         <div class="f" title="Dời thân (kèm đầu) sang ngang riêng khung này, giữ nguyên khi Tự căn. Dùng khi thân nghiêng hoặc tay, đai làm lệch điểm neo gấu áo.">Thân dời ngang (px)<input type="number" id="frBdx"></div>
       </div>
@@ -531,7 +532,7 @@ function anchorPts(f){
 // ================= render =================
 const cv=$('#cv'),g=cv.getContext('2d');
 // NSO Char.java paint: standing (statusMe 1/6) = legs, body, head; every other state = legs, head, body
-function orderFor(f){const L=S.layers;if(!S.opts||!S.opts.nsoOrder)return L;const hi=L.findIndex(l=>l.key==='head'),bi=L.findIndex(l=>l.key==='body');if(hi<0||bi<0)return L;
+function orderFor(f){const L=S.layers;if(f&&f.bodyOver){const hi=L.findIndex(l=>l.key==='head'),bi=L.findIndex(l=>l.key==='body');if(hi>=0&&bi>=0&&hi>bi){const o=L.filter(l=>l.key!=='head');o.splice(o.findIndex(l=>l.key==='body'),0,L[hi]);return o}return L}if(!S.opts||!S.opts.nsoOrder)return L;const hi=L.findIndex(l=>l.key==='head'),bi=L.findIndex(l=>l.key==='body');if(hi<0||bi<0)return L;
   const o=L.filter(l=>l.key!=='head'),b=o.findIndex(l=>l.key==='body');o.splice(groupOf(f)==='idle'?b+1:b,0,L[hi]);return o}
 function drawFrame(ctx,f,ox,oy,sc,alpha=1,flip=false){
   ctx.save();ctx.globalAlpha=alpha;ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
@@ -615,7 +616,7 @@ function renderLayers(){
       if(a==='copy'){const v=inp.value;if(!v)return;const g=f.id.split('-')[0];change(()=>{S.frames.forEach((o,i)=>{if(o===f)return;const ok=v==='all'||(v==='group'&&o.id.split('-')[0]===g)||(v==='next'&&i===S.cur+1);if(ok){ensureLayers(o);Object.assign(o.L[k],{x:L.x,y:L.y,s:L.s});o.placed=true}})});toast('Đã chép toạ độ');return}
       change(()=>{S.sel=k;if(a==='vis')L.vis=inp.checked;else if(a==='img')L.img=inp.value||null;else L[a]=+inp.value;f.placed=true})});
     el.appendChild(d)}
-  $('#frId').value=f.id;$('#frName').value=f.name;$('#frMs').value=f.ms;$('#frBdx').value=f.bdx||0;$('#frHdx').value=f.hdx||0;$('#frLdx').value=f.ldx||0;
+  $('#frId').value=f.id;$('#frName').value=f.name;$('#frMs').value=f.ms;$('#frBdx').value=f.bdx||0;$('#frHdx').value=f.hdx||0;$('#frLdx').value=f.ldx||0;$('#frBodyOver').checked=!!f.bodyOver;
 }
 function thumb(f){const c=document.createElement('canvas');const bb=bbox(f);const TW=64,TH=92;c.width=TW;c.height=TH;const x=c.getContext('2d');
   if(bb){const sc=Math.min(TW/(bb.x1-bb.x0+8),TH/(bb.y1-bb.y0+8));drawFrame(x,f,TW/2-((bb.x0+bb.x1)/2)*sc,TH-4-bb.y1*sc,sc)}return c}
@@ -1000,7 +1001,7 @@ function bind(){
   $('#sAdd').onclick=async()=>{const sel=sheet.pieces.filter(p=>p.on);if(!sel.length)return;pushHist();for(const p of sel){const it={id:uid(),name:p.name,kind:p.kind,src:p.src};await loadImg(it);S.lib.push(it)}autoAssign();$('#dlg').close();after();toast(`Đã thêm ${sel.length} mảnh`)};
   ['cW','cH','cRX','cRY'].forEach(id=>$('#'+id).onchange=()=>change(()=>{S.canvas={w:+$('#cW').value||480,h:+$('#cH').value||480,rx:+$('#cRX').value,ry:+$('#cRY').value}}));
   $('#bAddLayer').onclick=()=>{const name=$('#newLayer').value.trim();if(!name)return;let key=safe(name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/đ/g,'d').replace(/\s+/g,'-'))||'layer';while(S.layers.find(l=>l.key===key))key+='_2';change(()=>{S.layers.push({key,label:name});S.sel=key});$('#newLayer').value=''};
-  $('#frId').onchange=e=>change(()=>fr().id=e.target.value.trim()||fr().id);$('#frName').onchange=e=>change(()=>fr().name=e.target.value);$('#frMs').onchange=e=>change(()=>fr().ms=+e.target.value||100);$('#frBdx').onchange=e=>change(()=>{const f=fr();f.bdx=Math.round(+e.target.value||0);autoAlign(f);f.placed=false});$('#frHdx').onchange=e=>change(()=>{const f=fr();f.hdx=Math.round(+e.target.value||0);autoAlign(f);f.placed=false});$('#frLdx').onchange=e=>change(()=>{const f=fr();f.ldx=Math.round(+e.target.value||0);autoAlign(f);f.placed=false});
+  $('#frId').onchange=e=>change(()=>fr().id=e.target.value.trim()||fr().id);$('#frName').onchange=e=>change(()=>fr().name=e.target.value);$('#frMs').onchange=e=>change(()=>fr().ms=+e.target.value||100);$('#frBdx').onchange=e=>change(()=>{const f=fr();f.bdx=Math.round(+e.target.value||0);autoAlign(f);f.placed=false});$('#frHdx').onchange=e=>change(()=>{const f=fr();f.hdx=Math.round(+e.target.value||0);autoAlign(f);f.placed=false});$('#frLdx').onchange=e=>change(()=>{const f=fr();f.ldx=Math.round(+e.target.value||0);autoAlign(f);f.placed=false});$('#frBodyOver').onchange=e=>change(()=>{fr().bodyOver=e.target.checked});
   document.querySelectorAll('[data-z]').forEach(b=>b.onclick=()=>{view.z=+b.dataset.z;render()});$('#bZoomFit').onclick=fitZoom;
   $('#bFlip').onclick=()=>{view.flip=!view.flip;$('#bFlip').textContent=view.flip?'Hướng: ← trái':'Hướng: phải →';render()};
   ['tGrid','tOnion','tAnch','tBox','tBg'].forEach(id=>$('#'+id).onchange=render);
